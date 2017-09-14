@@ -1,0 +1,45 @@
+.layout {
+	display: flex;
+	flex-direction: column;
+}
+
+.masterbar {
+	background: #4c5be2;
+	color: white;
+	height: 46px;
+	flex: none;
+	display: flex;
+	align-items: center;
+	padding: 0 12px;
+}
+
+.title {
+	font-size: 16px;
+}
+
+.tagline {
+	margin-left: auto;
+}
+
+.content {
+	flex: auto;
+	padding: 12px;
+}
+
+.label {
+	margin-right: 12px;
+}
+
+.select {
+	margin-right: 12px;
+}
+
+.table {
+	font-family: monospace;
+	flex: auto;
+}
+
+.push {
+	font-family: monospace;
+	margin-bottom: 12px;
+}
