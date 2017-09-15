@@ -126,7 +126,18 @@ const Delta = ({ loading, delta }) => {
 
 class Chart extends Component {
 	render() {
-		return <div className="chart" ref={el => (this.chartEl = el)} />;
+		const pushCount = this.props.data ? this.props.data.length : null;
+
+		return (
+			<div className="chart-container">
+				{pushCount !== null && (
+					<div className="chart-header">
+						Showing last {pushCount} pushes in <b>master</b>
+					</div>
+				)}
+				<div className="chart" ref={el => (this.chartEl = el)} />
+			</div>
+		);
 	}
 
 	componentDidMount() {
