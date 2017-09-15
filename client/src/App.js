@@ -19,11 +19,11 @@ const Select = ({ value, onChange, options }) => {
 
 	return (
 		<select className="select" value={value} onChange={onChange}>
-			{options.map(opt =>
+			{options.map(opt => (
 				<option key={opt} value={opt}>
 					{opt}
 				</option>
-			)}
+			))}
 		</select>
 	);
 };
@@ -39,34 +39,25 @@ const Table = ({ data, size }) => {
 				<tr>
 					<th>Commit</th>
 					<th>Time</th>
-					<th>
-						{size}
-					</th>
+					<th>{size}</th>
 				</tr>
 			</thead>
 			<tbody>
-				{data.map(d =>
+				{data.map(d => (
 					<tr key={d.sha}>
-						<td>
-							{d.sha}
-						</td>
-						<td>
-							{d.created_at}
-						</td>
-						<td>
-							{d[size]}
-						</td>
+						<td>{d.sha}</td>
+						<td>{d.created_at}</td>
+						<td>{d[size]}</td>
 					</tr>
-				)}
+				))}
 			</tbody>
 		</table>
 	);
 };
 
-const CommitLink = ({ sha }) =>
-	<a href={`https://github.com/Automattic/wp-calypso/commit/${sha}`}>
-		{sha}
-	</a>;
+const CommitLink = ({ sha }) => (
+	<a href={`https://github.com/Automattic/wp-calypso/commit/${sha}`}>{sha}</a>
+);
 
 const CommitMessage = ({ message }) => {
 	const children = [];
@@ -76,19 +67,13 @@ const CommitMessage = ({ message }) => {
 	while ((match = re.exec(message))) {
 		children.push(
 			message.substr(i, match.index - i),
-			<a href={`https://github.com/Automattic/wp-calypso/pull/${match[1]}`}>
-				{match[0]}
-			</a>
+			<a href={`https://github.com/Automattic/wp-calypso/pull/${match[1]}`}>{match[0]}</a>
 		);
 		i = match.index + match[0].length;
 	}
 	children.push(message.substr(i));
 
-	return (
-		<span>
-			{children}
-		</span>
-	);
+	return <span>{children}</span>;
 };
 
 const Push = ({ loading, push }) => {
@@ -180,10 +165,19 @@ class Chart extends Component {
 	};
 }
 
-const Label = ({ children }) =>
-	<label className="label">
-		{children}
-	</label>;
+const Label = ({ children }) => <label className="label">{children}</label>;
+
+const GitHubButton = () => (
+	<span className="button">
+		<a
+			className="github-button"
+			href="https://github.com/jsnajdr/icfy"
+			aria-label="View sources on GitHub"
+		>
+			GitHub
+		</a>
+	</span>
+);
 
 class App extends Component {
 	state = {
@@ -250,6 +244,7 @@ class App extends Component {
 				<div className="masterbar">
 					<span className="title">Is Calypso fast yet?</span>
 					<span className="tagline">Tracking Webpack bundle sizes since 2017</span>
+					<GitHubButton />
 				</div>
 				<div className="content">
 					<Label>Select the chunk to display:</Label>

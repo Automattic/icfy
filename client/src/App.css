@@ -21,6 +21,10 @@
 	margin-left: auto;
 }
 
+.button {
+	margin-left: 12px;
+}
+
 .content {
 	flex: auto;
 	padding: 12px;
