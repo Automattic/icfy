@@ -5,8 +5,8 @@
   "dependencies": {
     "axios": "^0.16.2",
     "c3": "^0.4.17",
-    "react": "^15.6.1",
-    "react-dom": "^15.6.1",
+    "react": "^16.0.0",
+    "react-dom": "^16.0.0",
     "react-scripts": "1.0.13"
   },
   "scripts": {
