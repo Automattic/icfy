@@ -8,6 +8,8 @@ import 'c3/c3.css';
 const apiURL = 'http://api.iscalypsofastyet.com:5000';
 const sizes = ['stat_size', 'parsed_size', 'gzip_size'];
 
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
 const Select = ({ value, onChange, options }) => {
 	if (!options) {
 		return (
@@ -76,50 +78,56 @@ const CommitMessage = ({ message }) => {
 	return <span>{children}</span>;
 };
 
-const Push = ({ loading, push }) => {
-	if (!push) {
-		return <div className="push is-empty" />;
+const Push = ({ push }) => (
+	<div>
+		<b>Author:</b> {push ? push.author : '...'}
+		<br />
+		<b>At:</b> {push ? push.created_at : '...'}
+		<br />
+		<b>Message:</b> {push ? <CommitMessage message={push.message} /> : '...'}
+	</div>
+);
+
+const Delta = ({ delta }) => {
+	let content;
+	if (!delta) {
+		content = '...';
+	} else if (delta.length === 0) {
+		content = 'no changes in production JS';
+	} else {
+		content = delta.map(d => {
+			let text;
+			if (!d.firstSize) {
+				text = 'new chunk';
+			} else if (!d.secondSize) {
+				text = 'deleted chunk';
+			} else {
+				const diff = d.secondSize - d.firstSize;
+				text = diff > 0 ? `+${diff} bytes` : `${diff} bytes`;
+			}
+			return (
+				<span>
+					{d.chunk}: {text}
+					<br />
+				</span>
+			);
+		});
 	}
 
-	return (
-		<div className="push">
-			<b>Commit:</b> <CommitLink sha={push.sha} />
-			<br />
-			<b>Author:</b> {push.author}
-			<br />
-			<b>At:</b> {push.created_at}
-			<br />
-			<b>Message:</b> <CommitMessage message={push.message} />
-		</div>
-	);
+	return [<b>Delta:</b>, <br />, content];
 };
 
-const Delta = ({ loading, delta }) => {
-	if (!delta) {
-		return <div className="push is-empty" />;
+const PushDetails = ({ sha, push, delta }) => {
+	if (!sha) {
+		return null;
 	}
 
 	return (
 		<div className="push">
-			<b>Delta:</b>
+			<b>Commit:</b> <CommitLink sha={sha} />
 			<br />
-			{delta.map(d => {
-				let text;
-				if (!d.firstSize) {
-					text = 'new chunk';
-				} else if (!d.secondSize) {
-					text = 'deleted chunk';
-				} else {
-					const diff = d.secondSize - d.firstSize;
-					text = diff > 0 ? `+${diff} bytes` : `${diff} bytes`;
-				}
-				return (
-					<span>
-						{d.chunk}: {text}
-						<br />
-					</span>
-				);
-			})}
+			<Push push={push} />
+			<Delta delta={delta} />
 		</div>
 	);
 };
@@ -196,6 +204,7 @@ class App extends Component {
 		selectedChunk: 'build',
 		selectedSize: 'gzip_size',
 		chart: null,
+		currentPushSha: null,
 		currentPush: null,
 		currentDelta: null,
 	};
@@ -214,25 +223,42 @@ class App extends Component {
 		this.setState({ selectedSize: event.target.value });
 	};
 
-	showPush = pushIndex => {
+	showPush = async pushIndex => {
 		const pushToLoad = this.state.chart[pushIndex];
 		const prevPush = pushIndex > 0 ? this.state.chart[pushIndex - 1] : null;
 
-		get(`${apiURL}/push/${pushToLoad.sha}`).then(response => {
-			const { push } = response.data;
-			this.setState({ currentPush: push });
+		this.setState({
+			currentPushSha: pushToLoad.sha,
+			currentPush: null,
+			currentDelta: null,
 		});
 
-		if (!prevPush) {
-			this.setState({ currentDelta: null });
-		} else {
-			get(
-				`${apiURL}/delta/${this.state.selectedSize}/${prevPush.sha}/${pushToLoad.sha}`
-			).then(response => {
-				const { delta } = response.data;
-				this.setState({ currentDelta: delta });
-			});
+		await sleep(500);
+		if (this.state.currentPushSha !== pushToLoad.sha) {
+			return;
 		}
+
+		const pushResponse = await get(`${apiURL}/push/${pushToLoad.sha}`);
+		if (this.state.currentPushSha !== pushToLoad.sha) {
+			return;
+		}
+
+		const currentPush = pushResponse.data.push;
+		this.setState({ currentPush });
+
+		if (!prevPush) {
+			return;
+		}
+
+		const deltaResponse = await get(
+			`${apiURL}/delta/${this.state.selectedSize}/${prevPush.sha}/${pushToLoad.sha}`
+		);
+		if (this.state.currentPushSha !== pushToLoad.sha) {
+			return;
+		}
+
+		const currentDelta = deltaResponse.data.delta;
+		this.setState({ currentDelta });
 	};
 
 	loadChunks() {
@@ -271,8 +297,11 @@ class App extends Component {
 						size={this.state.selectedSize}
 						onMouseOver={this.showPush}
 					/>
-					<Push push={this.state.currentPush} />
-					<Delta delta={this.state.currentDelta} />
+					<PushDetails
+						sha={this.state.currentPushSha}
+						push={this.state.currentPush}
+						delta={this.state.currentDelta}
+					/>
 				</div>
 			</div>
 		);
