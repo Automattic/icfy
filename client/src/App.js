@@ -150,7 +150,8 @@ class App extends Component {
 		chunks: null,
 		selectedChunk: 'build',
 		selectedSize: 'gzip_size',
-		chart: null,
+		data: null,
+		chartData: null,
 		currentPushSha: null,
 		currentPush: null,
 		currentDelta: null,
@@ -161,18 +162,12 @@ class App extends Component {
 		this.loadChart();
 	}
 
-	changeChunk = event => {
-		const selectedChunk = event.target.value;
-		this.setState({ selectedChunk }, () => this.loadChart());
-	};
-
-	changeSize = event => {
-		this.setState({ selectedSize: event.target.value });
-	};
+	changeChunk = event => this.setChunk(event.target.value);
+	changeSize = event => this.setSize(event.target.value);
 
 	showPush = async pushIndex => {
-		const pushToLoad = this.state.chart[pushIndex];
-		const prevPush = pushIndex > 0 ? this.state.chart[pushIndex - 1] : null;
+		const pushToLoad = this.state.data[pushIndex];
+		const prevPush = pushIndex > 0 ? this.state.data[pushIndex - 1] : null;
 
 		this.setState({
 			currentPushSha: pushToLoad.sha,
@@ -216,9 +211,26 @@ class App extends Component {
 	}
 
 	loadChart() {
-		get(`${apiURL}/chart/week/${this.state.selectedChunk}`).then(response => {
-			const { data } = response.data;
-			this.setState({ chart: data });
+		get(`${apiURL}/chart/week/${this.state.selectedChunk}`).then(response =>
+			this.setData(response.data.data)
+		);
+	}
+
+	setChunk(chunk) {
+		this.setState({ selectedChunk: chunk }, () => this.loadChart());
+	}
+
+	setSize(size) {
+		this.setState({
+			selectedSize: size,
+			chartData: [this.state.selectedChunk, ...this.state.data.map(d => d[size])],
+		});
+	}
+
+	setData(data) {
+		this.setState({
+			data,
+			chartData: [this.state.selectedChunk, ...data.map(d => d[this.state.selectedSize])],
 		});
 	}
 
@@ -239,11 +251,9 @@ class App extends Component {
 					/>
 					<Label>Select the size type you're interested in:</Label>
 					<Select value={this.state.selectedSize} onChange={this.changeSize} options={sizes} />
-					<Chart
-						data={this.state.chart}
-						size={this.state.selectedSize}
-						onMouseOver={this.showPush}
-					/>
+					{this.state.chartData && (
+						<Chart chartData={this.state.chartData} onMouseOver={this.showPush} />
+					)}
 					<PushDetails
 						sha={this.state.currentPushSha}
 						push={this.state.currentPush}

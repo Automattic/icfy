@@ -4,15 +4,13 @@ import 'c3/c3.css';
 
 class Chart extends Component {
 	render() {
-		const pushCount = this.props.data ? this.props.data.length : null;
+		const pushCount = this.props.chartData.length - 1;
 
 		return (
 			<div className="chart-container">
-				{pushCount !== null && (
-					<div className="chart-header">
-						Showing last {pushCount} pushes in <b>master</b>
-					</div>
-				)}
+				<div className="chart-header">
+					Showing last {pushCount} pushes in <b>master</b>
+				</div>
 				<div className="chart" ref={el => (this.chartEl = el)} />
 			</div>
 		);
@@ -23,7 +21,7 @@ class Chart extends Component {
 	}
 
 	componentDidUpdate(prevProps) {
-		if (prevProps.data === this.props.data && prevProps.size === this.props.size) {
+		if (prevProps.chartData === this.props.chartData) {
 			return;
 		}
 		this.drawChart();
@@ -34,16 +32,10 @@ class Chart extends Component {
 			return;
 		}
 
-		const { data, size } = this.props;
-
-		if (!data) {
-			return;
-		}
-
 		c3.generate({
 			bindto: this.chartEl,
 			data: {
-				columns: [[size, ...data.map(d => d[size])]],
+				columns: [this.props.chartData],
 				onmouseover: this.handleMouseOver,
 			},
 		});
