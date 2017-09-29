@@ -29,32 +29,46 @@ const Select = ({ value, onChange, options }) => {
 	);
 };
 
-const Table = ({ data, size }) => {
-	if (!data) {
-		return <div>Loading</div>;
-	}
+class CheckList extends Component {
+	static defaultProps = {
+		value: [],
+	};
 
-	return (
-		<table className="table">
-			<thead>
-				<tr>
-					<th>Commit</th>
-					<th>Time</th>
-					<th>{size}</th>
-				</tr>
-			</thead>
-			<tbody>
-				{data.map(d => (
-					<tr key={d.sha}>
-						<td>{d.sha}</td>
-						<td>{d.created_at}</td>
-						<td>{d[size]}</td>
-					</tr>
+	handleChange = event => {
+		const { value, onChange } = this.props;
+		const { name, checked } = event.target;
+		if (checked) {
+			onChange([...value, name]);
+		} else {
+			onChange(value.filter(v => v !== name));
+		}
+	};
+
+	render() {
+		const { value, options } = this.props;
+
+		if (!options) {
+			return null;
+		}
+
+		return (
+			<div className="checklist">
+				{options.map(opt => (
+					<div key={opt} className="checklist__item">
+						<input
+							type="checkbox"
+							id={opt}
+							name={opt}
+							checked={value.includes(opt)}
+							onChange={this.handleChange}
+						/>
+						<label htmlFor={opt}>{opt}</label>
+					</div>
 				))}
-			</tbody>
-		</table>
-	);
-};
+			</div>
+		);
+	}
+}
 
 const CommitLink = ({ sha }) => (
 	<a href={`https://github.com/Automattic/wp-calypso/commit/${sha}`}>{sha}</a>
@@ -148,7 +162,7 @@ const GitHubButton = () => (
 class App extends Component {
 	state = {
 		chunks: null,
-		selectedChunk: 'build',
+		selectedChunks: ['build'],
 		selectedSize: 'gzip_size',
 		data: null,
 		chartData: null,
@@ -162,12 +176,12 @@ class App extends Component {
 		this.loadChart();
 	}
 
-	changeChunk = event => this.setChunk(event.target.value);
+	changeChunks = chunks => this.setChunks(chunks);
 	changeSize = event => this.setSize(event.target.value);
 
 	showPush = async pushIndex => {
-		const pushToLoad = this.state.data[pushIndex];
-		const prevPush = pushIndex > 0 ? this.state.data[pushIndex - 1] : null;
+		const pushToLoad = this.state.data[0].data[pushIndex];
+		const prevPush = pushIndex > 0 ? this.state.data[0].data[pushIndex - 1] : null;
 
 		this.setState({
 			currentPushSha: pushToLoad.sha,
@@ -211,26 +225,42 @@ class App extends Component {
 	}
 
 	loadChart() {
-		get(`${apiURL}/chart/week/${this.state.selectedChunk}`).then(response =>
-			this.setData(response.data.data)
-		);
+		Promise.all(
+			this.state.selectedChunks.map(chunk =>
+				get(`${apiURL}/chart/week/${chunk}`).then(response => ({
+					chunk,
+					data: response.data.data,
+				}))
+			)
+		).then(data => this.setData(data));
 	}
 
-	setChunk(chunk) {
-		this.setState({ selectedChunk: chunk }, () => this.loadChart());
+	setChunks(selectedChunks) {
+		if (selectedChunks.length === 0) {
+			selectedChunks = ['build'];
+		}
+		this.setState({ selectedChunks }, () => this.loadChart());
 	}
 
-	setSize(size) {
+	setSize(selectedSize) {
+		const { data } = this.state;
 		this.setState({
-			selectedSize: size,
-			chartData: [this.state.selectedChunk, ...this.state.data.map(d => d[size])],
+			selectedSize,
+			chartData: data.map(chunkData => [
+				chunkData.chunk,
+				...chunkData.data.map(d => d[selectedSize]),
+			]),
 		});
 	}
 
 	setData(data) {
+		const { selectedSize } = this.state;
 		this.setState({
 			data,
-			chartData: [this.state.selectedChunk, ...data.map(d => d[this.state.selectedSize])],
+			chartData: data.map(chunkData => [
+				chunkData.chunk,
+				...chunkData.data.map(d => d[selectedSize]),
+			]),
 		});
 	}
 
@@ -242,14 +272,15 @@ class App extends Component {
 					<span className="tagline">Tracking Webpack bundle sizes since 2017</span>
 					<GitHubButton />
 				</div>
-				<div className="sidebar"></div>
-				<div className="content">
-					<Label>Select the chunk to display:</Label>
-					<Select
-						value={this.state.selectedChunk}
-						onChange={this.changeChunk}
+				<div className="sidebar">
+					<Label>Select the chunks to display:</Label>
+					<CheckList
+						value={this.state.selectedChunks}
+						onChange={this.changeChunks}
 						options={this.state.chunks}
 					/>
+				</div>
+				<div className="content">
 					<Label>Select the size type you're interested in:</Label>
 					<Select value={this.state.selectedSize} onChange={this.changeSize} options={sizes} />
 					{this.state.chartData && (

@@ -26,6 +26,9 @@
 	position: fixed;
 	top: 46px;
 	bottom: 0;
+	padding: 12px;
+	box-sizing: border-box;
+	overflow: scroll;
 }
 
 .content {
@@ -66,4 +69,14 @@
 
 .chart-header {
 	margin: 12px 0;
+}
+
+.checklist {
+	margin-top: 12px;
+}
+
+.checklist__item {
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }

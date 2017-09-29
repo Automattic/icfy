@@ -4,7 +4,7 @@ import 'c3/c3.css';
 
 class Chart extends Component {
 	render() {
-		const pushCount = this.props.chartData.length - 1;
+		const pushCount = this.props.chartData[0].length - 1;
 
 		return (
 			<div className="chart-container">
@@ -35,7 +35,7 @@ class Chart extends Component {
 		c3.generate({
 			bindto: this.chartEl,
 			data: {
-				columns: [this.props.chartData],
+				columns: this.props.chartData,
 				onmouseover: this.handleMouseOver,
 			},
 		});
