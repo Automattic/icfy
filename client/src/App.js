@@ -242,6 +242,7 @@ class App extends Component {
 					<span className="tagline">Tracking Webpack bundle sizes since 2017</span>
 					<GitHubButton />
 				</div>
+				<div className="sidebar"></div>
 				<div className="content">
 					<Label>Select the chunk to display:</Label>
 					<Select

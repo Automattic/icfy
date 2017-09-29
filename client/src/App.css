@@ -1,6 +1,5 @@
 .layout {
-	display: flex;
-	flex-direction: column;
+
 }
 
 .masterbar {
@@ -10,7 +9,29 @@
 	flex: none;
 	display: flex;
 	align-items: center;
+	box-sizing: border-box;
 	padding: 0 12px;
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	z-index: 1;
+}
+
+.sidebar {
+	background: #e9eff3;
+	width: 270px;
+	display: flex;
+	flex-direction: column;
+	position: fixed;
+	top: 46px;
+	bottom: 0;
+}
+
+.content {
+	margin-left: 270px;
+	margin-top: 46px;
+	padding: 12px;
 }
 
 .title {
@@ -23,11 +44,6 @@
 
 .button {
 	margin-left: 12px;
-}
-
-.content {
-	flex: auto;
-	padding: 12px;
 }
 
 .label {
