@@ -49,6 +49,10 @@ const findNewPushesSince = co.wrap(function*(lastPush) {
 	let lastPushFound = false;
 
 	while (!lastPushFound) {
+		if (page > 10) {
+			log(`Didn't find the last push on last 10 pages`);
+			break;
+		}
 		const pushes = yield fetchPushEvents(page++);
 		for (const push of pushes) {
 			if (push.sha === lastPush.sha) {
