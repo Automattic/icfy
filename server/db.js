@@ -52,20 +52,26 @@ exports.getPushDelta = co.wrap(function*(size, first, second) {
 	const deltas = [];
 	for (const firstStat of firstStats) {
 		const chunk = firstStat.chunk;
-		const firstSize = firstStat[size];
 		const firstHash = firstStat.hash;
+		const firstSize = firstStat[size];
 		const secondStat = secondStats.find(s => s.chunk === chunk);
-		const secondSize = secondStat ? secondStat[size] : null;
 		const secondHash = secondStat ? secondStat.hash : null;
+		const secondSize = secondStat ? secondStat[size] : null;
 
 		if (firstHash !== secondHash) {
-			deltas.push({ chunk, firstSize, secondSize });
+			deltas.push({ chunk, firstHash, firstSize, secondHash, secondSize });
 		}
 	}
 
-	for (const stat of secondStats) {
-		if (!firstStats.find(s => s.chunk === stat.chunk)) {
-			deltas.push({ chunk: stat.chunk, firstSize: null, secondSize: stat[size] });
+	for (const secondStat of secondStats) {
+		if (!firstStats.find(s => s.chunk === secondStat.chunk)) {
+			deltas.push({
+				chunk: secondStat.chunk,
+				firstHash: null,
+				firstSize: null,
+				secondHash: secondStat.hash,
+				secondSize: secondStat[size],
+			});
 		}
 	}
 
