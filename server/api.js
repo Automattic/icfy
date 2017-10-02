@@ -32,6 +32,7 @@ function getChart(req, res) {
 	const { period, chunk } = req.params;
 
 	db.getChartData(period, chunk)
+		.then(data => data.slice(-200))
 		.then(data => res.json({ data }))
 		.catch(reportError(res));
 }
