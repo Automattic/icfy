@@ -17,7 +17,7 @@ function cors(req, res, next) {
 	next();
 }
 
-const reportError = req => error => {
+const reportError = res => error => {
 	console.error(error);
 	res.status(500).send('Internal Error');
 };
