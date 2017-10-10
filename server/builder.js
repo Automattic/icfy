@@ -1,5 +1,5 @@
 const { writeFileSync } = require('fs');
-const { spawn } = require('child_process');
+const { spawn, exec } = require('child_process');
 const { join } = require('path');
 const co = require('co');
 const { readStatsFromFile, getViewerData } = require('webpack-bundle-analyzer/lib/analyzer');
@@ -40,6 +40,24 @@ function cmd(cmdline, env = {}) {
 	});
 }
 
+function exe(cmdline, env = {}) {
+	return new Promise((resolve, reject) => {
+		log(`Executing: ${cmdline} in ${process.cwd()}`);
+		env = Object.assign({}, process.env, env);
+		const proc = exec(cmdline, { env });
+		proc.stdout.on('data', prcLog);
+		proc.stderr.on('data', prcLog);
+		proc.on('close', code => {
+			if (code === 0) {
+				resolve(code);
+			} else {
+				reject(`${cmdline} exited with code ${code}`);
+			}
+		});
+		proc.on('error', err => reject(`${cmdline} failed to execute: ${err}`));
+	});
+}
+
 const processPush = co.wrap(function*(push) {
 	process.chdir(repoDir);
 
@@ -49,15 +67,10 @@ const processPush = co.wrap(function*(push) {
 	// checkout the revision we want
 	yield cmd(`git checkout ${push.sha}`);
 
-	// print out the versions
-	yield cmd('node -v');
-	yield cmd('npm -v');
-
 	// run the build
-	yield cmd('npm run build', {
+	yield exe('npm run -s env -- node --max_old_space_size=8192 ./node_modules/.bin/webpack --config webpack.config.js --profile --json', {
 		NODE_ENV: 'production',
-		WEBPACK_OUTPUT_JSON: 1,
-		NODE_ARGS: '--max_old_space_size=8192'
+		WEBPACK_OUTPUT_JSON: 1
 	});
 
 	// generate the chart data
