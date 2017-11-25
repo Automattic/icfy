@@ -1,5 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { getPush, getDelta } from './api';
+
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 const pathJoin = (...parts) =>
 	parts.reduce((joined, part) => (!part ? joined : joined + '/' + part));
@@ -75,19 +78,79 @@ const Delta = ({ delta }) => {
 	);
 };
 
-const PushDetails = ({ sha, prevSha, push, delta }) => {
-	if (!sha) {
-		return null;
+class PushDetails extends React.Component {
+	static defaultProps = {
+		debounceDelay: 0,
+		size: 'gzip_size',
+	};
+
+	state = {
+		push: null,
+		delta: null,
+	};
+
+	componentDidMount() {
+		this.loadPush(this.props.sha, this.props.prevSha);
 	}
 
-	return (
-		<div className="push">
-			<b>Commit:</b> <PushLink sha={sha} prevSha={prevSha} /> <GitHubLink sha={sha} />
-			<br />
-			<Push push={push} />
-			<Delta delta={delta} />
-		</div>
-	);
-};
+	componentWillReceiveProps(nextProps) {
+		if (this.props.sha !== nextProps.sha || this.props.prevSha !== nextProps.sha) {
+			this.loadPush(nextProps.sha, nextProps.prevSha);
+		}
+	}
+
+	async loadPush(sha, prevSha) {
+		this.setState({
+			push: null,
+			delta: null,
+		});
+
+		if (this.props.debounceDelay > 0) {
+			await sleep(this.props.debounceDelay);
+		}
+
+		if (this.props.sha !== sha) {
+			return;
+		}
+
+		const pushResponse = await getPush(sha);
+
+		if (this.props.sha !== sha) {
+			return;
+		}
+
+		this.setState({ push: pushResponse.data.push });
+
+		if (!prevSha) {
+			return;
+		}
+
+		const deltaResponse = await getDelta(this.props.size, sha, prevSha);
+
+		if (this.props.sha !== sha) {
+			return;
+		}
+
+		this.setState({ delta: deltaResponse.data.delta });
+	}
+
+	render() {
+		const { sha, prevSha } = this.props;
+		const { push, delta } = this.state;
+
+		if (!sha) {
+			return null;
+		}
+
+		return (
+			<div className="push">
+				<b>Commit:</b> <PushLink sha={sha} prevSha={prevSha} /> <GitHubLink sha={sha} />
+				<br />
+				<Push push={push} />
+				<Delta delta={delta} />
+			</div>
+		);
+	}
+}
 
 export default PushDetails;

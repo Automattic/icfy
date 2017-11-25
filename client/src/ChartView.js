@@ -1,11 +1,9 @@
 import React from 'react';
 
-import { getChartData, getChunkList, getDelta, getPush } from './api';
+import { getChartData, getChunkList } from './api';
 import Masterbar from './Masterbar';
 import Chart from './Chart';
 import PushDetails from './PushDetails';
-
-const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 const sizes = ['stat_size', 'parsed_size', 'gzip_size'];
 
@@ -80,8 +78,7 @@ class ChartView extends React.Component {
 		data: null,
 		chartData: null,
 		currentPushSha: null,
-		currentPush: null,
-		currentDelta: null,
+		currentPrevPushSha: null,
 	};
 
 	componentDidMount() {
@@ -92,41 +89,14 @@ class ChartView extends React.Component {
 	changeChunks = chunks => this.setChunks(chunks);
 	changeSize = event => this.setSize(event.target.value);
 
-	showPush = async pushIndex => {
+	showPush = pushIndex => {
 		const pushToLoad = this.state.data[0].data[pushIndex];
 		const prevPush = pushIndex > 0 ? this.state.data[0].data[pushIndex - 1] : null;
 
 		this.setState({
 			currentPushSha: pushToLoad.sha,
 			currentPrevPushSha: prevPush ? prevPush.sha : null,
-			currentPush: null,
-			currentDelta: null,
 		});
-
-		await sleep(500);
-		if (this.state.currentPushSha !== pushToLoad.sha) {
-			return;
-		}
-
-		const pushResponse = await getPush(pushToLoad.sha);
-		if (this.state.currentPushSha !== pushToLoad.sha) {
-			return;
-		}
-
-		const currentPush = pushResponse.data.push;
-		this.setState({ currentPush });
-
-		if (!prevPush) {
-			return;
-		}
-
-		const deltaResponse = await getDelta(this.state.selectedSize, pushToLoad.sha, prevPush.sha);
-		if (this.state.currentPushSha !== pushToLoad.sha) {
-			return;
-		}
-
-		const currentDelta = deltaResponse.data.delta;
-		this.setState({ currentDelta });
 	};
 
 	loadChunks() {
@@ -197,8 +167,8 @@ class ChartView extends React.Component {
 					<PushDetails
 						sha={this.state.currentPushSha}
 						prevSha={this.state.currentPrevPushSha}
-						push={this.state.currentPush}
-						delta={this.state.currentDelta}
+						size={this.state.selectedSize}
+						debounceDelay={500}
 					/>
 				</div>
 			</div>
