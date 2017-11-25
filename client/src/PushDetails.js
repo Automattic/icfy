@@ -1,7 +1,12 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
-const CommitLink = ({ sha }) => (
-	<a href={`https://github.com/Automattic/wp-calypso/commit/${sha}`}>{sha}</a>
+const pathJoin = (...parts) =>
+	parts.reduce((joined, part) => (!part ? joined : joined + '/' + part));
+
+const PushLink = ({ sha, prevSha }) => <Link to={pathJoin(`/push/${sha}`, prevSha)}>{sha}</Link>;
+const GitHubLink = ({ sha }) => (
+	<a href={`https://github.com/Automattic/wp-calypso/commit/${sha}`}>code</a>
 );
 
 const CommitMessage = ({ message }) => {
@@ -39,15 +44,19 @@ const Delta = ({ delta }) => {
 		content = 'no changes in production JS';
 	} else {
 		content = delta.map(d => {
-			let text;
+			let diff,
+				suffix = '';
 			if (!d.firstSize) {
-				text = 'new chunk';
+				diff = d.secondSize;
+				suffix = '(new chunk)';
 			} else if (!d.secondSize) {
-				text = 'deleted chunk';
+				diff = -d.firstSize;
+				suffix = '(deleted chunk)';
 			} else {
-				const diff = d.secondSize - d.firstSize;
-				text = diff > 0 ? `+${diff} bytes` : `${diff} bytes`;
+				diff = d.secondSize - d.firstSize;
 			}
+			const diffText = diff >= 0 ? `+${diff} bytes` : `${diff} bytes`;
+			const text = `${diffText} ${d.firstHash} -> ${d.secondHash} ${suffix}`;
 			return (
 				<span>
 					{d.chunk}: {text}
@@ -57,17 +66,23 @@ const Delta = ({ delta }) => {
 		});
 	}
 
-	return [<b>Delta:</b>, <br />, content];
+	return (
+		<div>
+			<b>Delta:</b>
+			<br />
+			{content}
+		</div>
+	);
 };
 
-const PushDetails = ({ sha, push, delta }) => {
+const PushDetails = ({ sha, prevSha, push, delta }) => {
 	if (!sha) {
 		return null;
 	}
 
 	return (
 		<div className="push">
-			<b>Commit:</b> <CommitLink sha={sha} />
+			<b>Commit:</b> <PushLink sha={sha} prevSha={prevSha} /> <GitHubLink sha={sha} />
 			<br />
 			<Push push={push} />
 			<Delta delta={delta} />
