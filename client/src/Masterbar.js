@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 const GitHubButton = () => (
 	<span className="button">
@@ -14,7 +15,7 @@ const GitHubButton = () => (
 
 const Masterbar = () => (
 	<div className="masterbar">
-		<span className="title">Is Calypso fast yet?</span>
+		<Link className="title" to="/">Is Calypso fast yet?</Link>
 		<span className="tagline">Tracking Webpack bundle sizes since 2017</span>
 		<GitHubButton />
 	</div>
