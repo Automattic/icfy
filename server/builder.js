@@ -68,7 +68,7 @@ const processPush = co.wrap(function*(push) {
 	yield cmd(`git checkout ${push.sha}`);
 
 	// run the build
-	yield exe('npm run -s env -- node --max_old_space_size=8192 ./node_modules/.bin/webpack --config webpack.config.js --profile --json', {
+	yield exe('npm run -s env -- node --max_old_space_size=8192 ./node_modules/.bin/webpack --config webpack.config.js --profile --json > stats.json', {
 		NODE_ENV: 'production',
 		WEBPACK_OUTPUT_JSON: 1
 	});
