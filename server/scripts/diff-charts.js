@@ -15,7 +15,13 @@ function assetsFromChart(chart) {
 	});
 }
 
-function deltaFromFiles(filename1, filename2, size) {
+const sizes = [ 'stat_size', 'parsed_size', 'gzip_size' ];
+
+function sizesOf(stat) {
+	return stat ? sizes.map(size => stat[size]) : null;
+}
+
+function deltaFromFiles(filename1, filename2) {
 	const chart1 = JSON.parse(readFileSync(filename1, 'utf-8'));
 	const chart2 = JSON.parse(readFileSync(filename2, 'utf-8'));
 
@@ -23,20 +29,20 @@ function deltaFromFiles(filename1, filename2, size) {
 	const secondStats = assetsFromChart(chart2);
 
 	const deltas = [];
-	for ( const stat of firstStats ) {
-		const chunk = stat.chunk;
-		const firstSize = stat[size];
+	for ( const firstStat of firstStats ) {
+		const chunk = firstStat.chunk;
+		const firstHash = firstStat.hash;
 		const secondStat = secondStats.find(s => s.chunk === chunk);
-		const secondSize = secondStat ? secondStat[size] : null;
+		const secondHash = secondStat ? secondStat.hash : null;
 
-		if (firstSize !== secondSize) {
-			deltas.push({ chunk, firstSize, secondSize });
+		if (firstHash !== secondHash) {
+			deltas.push({ chunk, firstSizes: sizesOf(firstStat), secondSizes: sizesOf(secondStat) });
 		}
 	}
 
-	for ( const stat of secondStats ) {
-		if (!firstStats.find(s => s.chunk === stat.chunk)) {
-			deltas.push({ chunk: stat.chunk, firstSize: null, secondSize: stat[size] });
+	for ( const secondStat of secondStats ) {
+		if (!firstStats.find(s => s.chunk === secondStat.chunk)) {
+			deltas.push({ chunk: stat.chunk, firstSizes: null, secondSize: sizesOf(secondStat) });
 		}
 	}
 
@@ -44,10 +50,13 @@ function deltaFromFiles(filename1, filename2, size) {
 }
 
 const delta = deltaFromFiles('chart1.json', 'chart2.json', 'gzip_size');
-let totalDelta = 0;
+let totalDeltas = [ 0, 0, 0 ];
 for (d of delta) {
-	const sizeDelta = d.secondSize - d.firstSize;
-	totalDelta += sizeDelta;
-	console.log(`${d.chunk}: ${sizeDelta}`);
+	const deltas = sizes.map((size, i) => {
+		const sizeDelta = d.secondSizes[i] - d.firstSizes[i];
+		totalDeltas[i] += sizeDelta;
+		return sizeDelta;
+	});
+	console.log(`${d.chunk}: parsed_size: ${deltas[1]} gzip_size: ${deltas[2]}`);
 }
-console.log(`Total: ${totalDelta}`);
+console.log(`Total: parsed_size: ${totalDeltas[1]} gzip_size: ${totalDeltas[2]}`);
