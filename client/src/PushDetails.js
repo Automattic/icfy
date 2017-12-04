@@ -78,6 +78,10 @@ const Delta = ({ delta }) => {
 	);
 };
 
+function pushParamsEqual(paramsA, paramsB) {
+	return ['sha', 'prevSha', 'size'].every(prop => paramsA[prop] === paramsB[prop]);
+}
+
 class PushDetails extends React.Component {
 	static defaultProps = {
 		debounceDelay: 0,
@@ -90,16 +94,16 @@ class PushDetails extends React.Component {
 	};
 
 	componentDidMount() {
-		this.loadPush(this.props.sha, this.props.prevSha);
+		this.loadPush(this.props);
 	}
 
 	componentWillReceiveProps(nextProps) {
-		if (this.props.sha !== nextProps.sha || this.props.prevSha !== nextProps.sha) {
-			this.loadPush(nextProps.sha, nextProps.prevSha);
+		if (!pushParamsEqual(this.props, nextProps)) {
+			this.loadPush(nextProps);
 		}
 	}
 
-	async loadPush(sha, prevSha) {
+	async loadPush(pushParams) {
 		this.setState({
 			push: null,
 			delta: null,
@@ -109,25 +113,25 @@ class PushDetails extends React.Component {
 			await sleep(this.props.debounceDelay);
 		}
 
-		if (this.props.sha !== sha) {
+		if (!pushParamsEqual(this.props, pushParams)) {
 			return;
 		}
 
-		const pushResponse = await getPush(sha);
+		const pushResponse = await getPush(pushParams.sha);
 
-		if (this.props.sha !== sha) {
+		if (!pushParamsEqual(this.props, pushParams)) {
 			return;
 		}
 
 		this.setState({ push: pushResponse.data.push });
 
-		if (!prevSha) {
+		if (!pushParams.prevSha) {
 			return;
 		}
 
-		const deltaResponse = await getDelta(this.props.size, sha, prevSha);
+		const deltaResponse = await getDelta(pushParams.size, pushParams.sha, pushParams.prevSha);
 
-		if (this.props.sha !== sha) {
+		if (!pushParamsEqual(this.props, pushParams)) {
 			return;
 		}
 
