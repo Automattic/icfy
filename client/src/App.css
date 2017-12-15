@@ -51,12 +51,9 @@
 	margin-left: 12px;
 }
 
-.label {
-	margin-right: 12px;
-}
-
 .select {
-	margin-right: 12px;
+	margin-left: 6px;
+	margin-right: 6px;
 }
 
 .table {
@@ -67,10 +64,6 @@
 .push {
 	font-family: monospace;
 	margin-bottom: 12px;
-}
-
-.chart-header {
-	margin: 12px 0;
 }
 
 .checklist {

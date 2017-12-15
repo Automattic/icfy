@@ -4,15 +4,8 @@ import 'c3/c3.css';
 
 class Chart extends Component {
 	render() {
-		const pushCount = this.props.chartData[0].length - 1;
-
 		return (
-			<div className="chart-container">
-				<div className="chart-header">
-					Showing last {pushCount} pushes in <b>master</b>
-				</div>
-				<div className="chart" ref={el => (this.chartEl = el)} />
-			</div>
+			<div className="chart" ref={el => (this.chartEl = el)} />
 		);
 	}
 

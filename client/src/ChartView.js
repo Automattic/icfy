@@ -4,28 +4,15 @@ import { getChartData, getChunkList } from './api';
 import Masterbar from './Masterbar';
 import Chart from './Chart';
 import PushDetails from './PushDetails';
+import Select from './Select';
 
-const sizes = ['stat_size', 'parsed_size', 'gzip_size'];
-
-const Select = ({ value, onChange, options }) => {
-	if (!options) {
-		return (
-			<select className="select" disabled>
-				Loading
-			</select>
-		);
-	}
-
-	return (
-		<select className="select" value={value} onChange={onChange}>
-			{options.map(opt => (
-				<option key={opt} value={opt}>
-					{opt}
-				</option>
-			))}
-		</select>
-	);
-};
+const SIZES = ['stat_size', 'parsed_size', 'gzip_size'];
+const PERIODS = [
+	{ value: 'last200', name: 'last 200 pushes' },
+	{ value: 'last400', name: 'last 400 pushes' },
+	{ value: 'last800', name:'last 800 pushes' },
+	{ value: 'last1600', name:'last 1600 pushes' }
+];
 
 class CheckList extends React.Component {
 	static defaultProps = {
@@ -68,13 +55,12 @@ class CheckList extends React.Component {
 	}
 }
 
-const Label = ({ children }) => <label className="label">{children}</label>;
-
 class ChartView extends React.Component {
 	state = {
 		chunks: null,
 		selectedChunks: ['build'],
 		selectedSize: 'gzip_size',
+		selectedPeriod: 'last200',
 		data: null,
 		chartData: null,
 		currentPushSha: null,
@@ -88,6 +74,7 @@ class ChartView extends React.Component {
 
 	changeChunks = chunks => this.setChunks(chunks);
 	changeSize = event => this.setSize(event.target.value);
+	changePeriod = event => this.setPeriod(event.target.value);
 
 	showPush = pushIndex => {
 		const pushToLoad = this.state.data[0].data[pushIndex];
@@ -109,7 +96,7 @@ class ChartView extends React.Component {
 	loadChart() {
 		Promise.all(
 			this.state.selectedChunks.map(chunk =>
-				getChartData(chunk).then(response => ({
+				getChartData(chunk, this.state.selectedPeriod).then(response => ({
 					chunk,
 					data: response.data.data,
 				}))
@@ -122,6 +109,10 @@ class ChartView extends React.Component {
 			selectedChunks = ['build'];
 		}
 		this.setState({ selectedChunks }, () => this.loadChart());
+	}
+
+	setPeriod(selectedPeriod) {
+		this.setState({ selectedPeriod }, () => this.loadChart());
 	}
 
 	setSize(selectedSize) {
@@ -151,7 +142,7 @@ class ChartView extends React.Component {
 			<div className="layout">
 				<Masterbar />
 				<div className="sidebar">
-					<Label>Select the chunks to display:</Label>
+					<div>Select the chunks to display:</div>
 					<CheckList
 						value={this.state.selectedChunks}
 						onChange={this.changeChunks}
@@ -159,8 +150,15 @@ class ChartView extends React.Component {
 					/>
 				</div>
 				<div className="content has-sidebar">
-					<Label>Select the size type you're interested in:</Label>
-					<Select value={this.state.selectedSize} onChange={this.changeSize} options={sizes} />
+					<p>
+						Select the size type you're interested in:
+						<Select value={this.state.selectedSize} onChange={this.changeSize} options={SIZES} />
+					</p>
+					<p>
+						Showing
+						<Select value={this.state.selectedPeriod} onChange={this.changePeriod} options={PERIODS}/>
+						in <b>master</b>
+					</p>
 					{this.state.chartData && (
 						<Chart chartData={this.state.chartData} onMouseOver={this.showPush} />
 					)}
