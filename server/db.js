@@ -1,3 +1,4 @@
+const _ = require('lodash');
 const co = require('co');
 const knex = require('knex');
 const config = require('./knexfile');
@@ -34,11 +35,19 @@ exports.getKnownChunks = () =>
 		.select()
 		.then(res => res.map(row => row.chunk));
 
-exports.getChartData = (period, chunk) =>
-	K('stats')
+exports.getChartData = (period, chunk) => {
+	let lastCount = 200;
+	const lastReMatch = /^last(\d+)$/.exec(period);
+	if (lastReMatch) {
+		lastCount = Number(lastReMatch[1]);
+	}
+	return K('stats')
 		.select()
 		.where('chunk', chunk)
-		.orderBy('created_at');
+		.orderBy('created_at', 'desc')
+		.limit(lastCount)
+		.then(res => _.sortBy(res, 'created_at'));
+}
 
 exports.getPushDelta = co.wrap(function*(size, first, second) {
 	const [firstStats, secondStats] = yield Promise.all(
