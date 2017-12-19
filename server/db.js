@@ -41,9 +41,10 @@ exports.getChartData = (period, chunk) => {
 	if (lastReMatch) {
 		lastCount = Number(lastReMatch[1]);
 	}
+	const branch = 'master';
 	return K('stats')
 		.select()
-		.where('chunk', chunk)
+		.where({ branch, chunk })
 		.orderBy('created_at', 'desc')
 		.limit(lastCount)
 		.then(res => _.sortBy(res, 'created_at'));

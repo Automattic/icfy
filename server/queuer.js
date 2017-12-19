@@ -22,7 +22,8 @@ function toPush(response) {
 		sha: response.payload.head,
 		created_at: response.created_at,
 		author: response.actor.login,
-		message: response.payload.commits[0].message.split('\n')[0]
+		message: response.payload.commits[0].message.split('\n')[0],
+		branch: 'master',
 	};
 }
 
