@@ -101,7 +101,7 @@ class PushDetails extends React.Component {
 	}
 
 	render() {
-		const { sha, prevSha } = this.props;
+		const { size, sha, prevSha } = this.props;
 		const { push, delta } = this.state;
 
 		if (!sha) {
@@ -113,7 +113,7 @@ class PushDetails extends React.Component {
 				<b>Commit:</b> <PushLink sha={sha} prevSha={prevSha} /> <GitHubLink sha={sha} />
 				<br />
 				<Push push={push} />
-				<Delta delta={delta} />
+				<Delta size={size} delta={delta} />
 			</div>
 		);
 	}

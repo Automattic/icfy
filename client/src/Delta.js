@@ -1,41 +1,47 @@
 import React from 'react';
+import table from 'text-table';
 
-const Delta = ({ delta }) => {
+const DeltaTable = ({ size, delta }) => {
+	const tableData = [
+		// header columns
+		['chunk', size, 'old_hash', 'new_hash'],
+	];
+
+	for (const d of delta) {
+		let diff,
+			suffix = '';
+		if (!d.firstSize) {
+			diff = d.secondSize;
+			suffix = '(new chunk)';
+		} else if (!d.secondSize) {
+			diff = -d.firstSize;
+			suffix = '(deleted chunk)';
+		} else {
+			diff = d.secondSize - d.firstSize;
+		}
+		const diffText = diff >= 0 ? `+${diff} bytes` : `${diff} bytes`;
+		tableData.push([d.chunk, diffText, d.firstHash || '', d.secondHash || '', suffix]);
+	}
+
+	return <pre>{table(tableData, { align: ['l', 'r', 'r', 'r'] })}</pre>;
+};
+
+const Delta = ({ size, delta }) => {
 	let content;
 	if (!delta) {
-		content = '...';
+		content = 'building...';
 	} else if (delta.length === 0) {
 		content = 'no changes in production JS';
 	} else {
-		content = delta.map(d => {
-			let diff,
-				suffix = '';
-			if (!d.firstSize) {
-				diff = d.secondSize;
-				suffix = '(new chunk)';
-			} else if (!d.secondSize) {
-				diff = -d.firstSize;
-				suffix = '(deleted chunk)';
-			} else {
-				diff = d.secondSize - d.firstSize;
-			}
-			const diffText = diff >= 0 ? `+${diff} bytes` : `${diff} bytes`;
-			const text = `${diffText} ${d.firstHash} -> ${d.secondHash} ${suffix}`;
-			return (
-				<span key={d.chunk}>
-					{d.chunk}: {text}
-					<br />
-				</span>
-			);
-		});
+		content = <DeltaTable size={size} delta={delta} />;
 	}
 
 	return (
-		<p className="push">
+		<div className="push">
 			<b>Delta:</b>
 			<br />
 			{content}
-		</p>
+		</div>
 	);
 };
 

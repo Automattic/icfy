@@ -1,5 +1,4 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import { getBranches, getBranch, getPush, getDelta, insertPush } from './api';
 import Masterbar from './Masterbar';
 import Select from './Select';
@@ -39,12 +38,6 @@ const BranchCommit = ({ commit }) => {
 		</p>
 	);
 };
-
-const BranchPushData = ({ push }) => (
-	<p>
-		Stats for this push are <Link to={`/push/${push.sha}/${push.ancestor}`}>available</Link>
-	</p>
-);
 
 class BranchPushSubmit extends React.Component {
 	state = { ancestor: '' };
@@ -97,11 +90,13 @@ class BranchView extends React.Component {
 	}
 
 	loadBranches() {
-		getBranches().then(res =>
-			this.setState({
-				branchList: [{ value: '', name: '-- select branch --' }, ...res.data.branches],
-			})
-		);
+		getBranches().then(res => {
+			const branchList = [
+				{ value: '', name: '-- select branch --' },
+				...res.data.branches.filter(branch => branch !== 'master'),
+			];
+			this.setState({ branchList });
+		});
 	}
 
 	async loadBranchHead(branch) {
@@ -117,10 +112,16 @@ class BranchView extends React.Component {
 
 		const pushResponse = await getPush(sha);
 		const { push } = pushResponse.data;
+
 		if (!push) {
 			return;
 		}
+
 		this.setState({ selectedBranchPush: push });
+
+		if (!push.ancestor) {
+			return;
+		}
 
 		const deltaResponse = await getDelta('gzip_size', push.sha, push.ancestor);
 		this.setState({ selectedBranchDelta: deltaResponse.data.delta });
@@ -147,18 +148,14 @@ class BranchView extends React.Component {
 		return <BranchCommit commit={selectedBranchHead} />;
 	}
 
-	renderBranchPush() {
+	renderBranchPushSubmit() {
 		const { selectedBranch, selectedBranchHead, selectedBranchPush } = this.state;
 
-		if (!selectedBranchHead) {
-			return null;
+		if (selectedBranchHead && !selectedBranchPush) {
+			return <BranchPushSubmit branch={selectedBranch} commit={selectedBranchHead} />;
 		}
 
-		if (selectedBranchPush) {
-			return <BranchPushData push={selectedBranchPush} />;
-		}
-
-		return <BranchPushSubmit branch={selectedBranch} commit={selectedBranchHead} />;
+		return null;
 	}
 
 	renderBranchDelta() {
@@ -168,11 +165,11 @@ class BranchView extends React.Component {
 			return null;
 		}
 
-		return <Delta delta={selectedBranchDelta} />;
+		return <Delta size="gzip_size" delta={selectedBranchDelta} />;
 	}
 
 	render() {
-		const { branchList, selectedBranch, selectedBranchHead, selectedBranchPush } = this.state;
+		const { branchList, selectedBranch } = this.state;
 
 		return (
 			<div className="layout">
@@ -183,7 +180,7 @@ class BranchView extends React.Component {
 						<Select value={selectedBranch} onChange={this.selectBranch} options={branchList} />
 					</p>
 					{this.renderBranchCommit()}
-					{this.renderBranchPush()}
+					{this.renderBranchPushSubmit()}
 					{this.renderBranchDelta()}
 				</div>
 			</div>
