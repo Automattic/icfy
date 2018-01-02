@@ -90,18 +90,18 @@ class BranchView extends React.Component {
 	}
 
 	loadBranches() {
-		getBranches().then(res => {
+		getBranches().then(branches => {
 			const branchList = [
 				{ value: '', name: '-- select branch --' },
-				...res.data.branches.filter(branch => branch !== 'master'),
+				...branches.filter(branch => branch !== 'master'),
 			];
 			this.setState({ branchList });
 		});
 	}
 
-	async loadBranchHead(branch) {
-		const branchResponse = await getBranch(branch);
-		const { sha, author, commit } = branchResponse.data.branch.commit;
+	async loadBranchHead(branchName) {
+		const branchResponse = await getBranch(branchName);
+		const { sha, author, commit } = branchResponse.commit;
 		const head = {
 			sha,
 			author: author.login,
