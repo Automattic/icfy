@@ -15,8 +15,8 @@ function renderOption(option) {
 const Select = ({ value, onChange, options }) => {
 	if (!options) {
 		return (
-			<select className="select" disabled>
-				Loading
+			<select className="select" value="loading" disabled>
+				<option value="loading">loading...</option>
 			</select>
 		);
 	}

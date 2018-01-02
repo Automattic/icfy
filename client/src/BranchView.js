@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { getBranches, getBranch, getPush, insertPush } from './api';
 import Masterbar from './Masterbar';
 import Select from './Select';
@@ -26,7 +27,7 @@ const BranchCommit = ({ commit }) => {
 	}
 
 	return (
-		<div>
+		<p className="push">
 			<b>Commit:</b> {commit.sha}
 			<br />
 			<b>Author:</b> {commit.author}
@@ -34,11 +35,15 @@ const BranchCommit = ({ commit }) => {
 			<b>At:</b> {commit.created_at}
 			<br />
 			<b>Message:</b> <CommitMessage message={commit.message} />
-		</div>
+		</p>
 	);
 };
 
-const BranchPushData = () => <div>Yes, we have data for this push: [link]</div>;
+const BranchPushData = ({ push }) => (
+	<p>
+		Stats for this push are <Link to={`/push/${push.sha}/${push.ancestor}`}>available</Link>
+	</p>
+);
 
 class BranchPushSubmit extends React.Component {
 	state = { ancestor: '' };
@@ -56,33 +61,43 @@ class BranchPushSubmit extends React.Component {
 		const { ancestor } = this.state;
 
 		return (
-			<div>
+			<p>
 				<label>Ancestor SHA:</label>
-				<input value={ancestor} onChange={this.setAncestor} />
-				<button disabled={!ancestor} onClick={this.handleSubmit}>
+				<input className="input" value={ancestor} onChange={this.setAncestor} />
+				<button className="button" disabled={!ancestor} onClick={this.handleSubmit}>
 					Build
 				</button>
-			</div>
+			</p>
 		);
 	}
 }
 
 class BranchView extends React.Component {
-	state = {
-		branchList: null,
-		selectedBranch: '',
-		selectedBranchHead: null,
-		selectedBranchPush: null,
-	};
+	constructor(props) {
+		super(props);
+
+		const searchParams = new URLSearchParams(props.location.search);
+		const selectedBranch = searchParams.get('branch') || '';
+
+		this.state = {
+			branchList: null,
+			selectedBranch,
+			selectedBranchHead: null,
+			selectedBranchPush: null,
+		};
+	}
 
 	componentDidMount() {
 		this.loadBranches();
+		if (this.state.selectedBranch) {
+			this.loadBranchHead(this.state.selectedBranch);
+		}
 	}
 
 	loadBranches() {
 		getBranches().then(res =>
 			this.setState({
-				branchList: res.data.branches,
+				branchList: [{ value: '', name: '-- select branch --' }, ...res.data.branches],
 			})
 		);
 	}
@@ -111,6 +126,16 @@ class BranchView extends React.Component {
 		this.loadBranchHead(selectedBranch);
 	};
 
+	renderBranchCommit() {
+		const { selectedBranch, selectedBranchHead } = this.state;
+
+		if (!selectedBranch) {
+			return null;
+		}
+
+		return <BranchCommit commit={selectedBranchHead} />;
+	}
+
 	renderBranchPush() {
 		const { selectedBranch, selectedBranchHead, selectedBranchPush } = this.state;
 
@@ -126,17 +151,17 @@ class BranchView extends React.Component {
 	}
 
 	render() {
-		// const searchParams = new URLSearchParams(props.location.search);
-		// const branch = searchParams.get('branch');
 		const { branchList, selectedBranch, selectedBranchHead, selectedBranchPush } = this.state;
 
 		return (
 			<div className="layout">
 				<Masterbar />
 				<div className="content">
-					Please select a branch:
-					<Select value={selectedBranch} onChange={this.selectBranch} options={branchList} />
-					<BranchCommit commit={selectedBranchHead} />
+					<p>
+						<label>Showing stats for branch:</label>
+						<Select value={selectedBranch} onChange={this.selectBranch} options={branchList} />
+					</p>
+					{this.renderBranchCommit()}
 					{this.renderBranchPush()}
 				</div>
 			</div>
