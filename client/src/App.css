@@ -66,6 +66,10 @@
 	flex: auto;
 }
 
+.text-table {
+	white-space: pre-wrap;
+}
+
 .push {
 	font-family: monospace;
 	margin-bottom: 12px;

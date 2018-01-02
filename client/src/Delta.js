@@ -23,7 +23,9 @@ const DeltaTable = ({ size, delta }) => {
 		tableData.push([d.chunk, diffText, d.firstHash || '', d.secondHash || '', suffix]);
 	}
 
-	return <pre>{table(tableData, { align: ['l', 'r', 'r', 'r'] })}</pre>;
+	const tableText = table(tableData, { align: ['l', 'r', 'r', 'r'] });
+
+	return <div className="text-table">{tableText}</div>;
 };
 
 const Delta = ({ size, delta }) => {
