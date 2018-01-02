@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { getPush, getDelta } from './api';
+import Delta from './Delta';
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -38,45 +39,6 @@ const Push = ({ push }) => (
 		<b>Message:</b> {push ? <CommitMessage message={push.message} /> : '...'}
 	</div>
 );
-
-const Delta = ({ delta }) => {
-	let content;
-	if (!delta) {
-		content = '...';
-	} else if (delta.length === 0) {
-		content = 'no changes in production JS';
-	} else {
-		content = delta.map(d => {
-			let diff,
-				suffix = '';
-			if (!d.firstSize) {
-				diff = d.secondSize;
-				suffix = '(new chunk)';
-			} else if (!d.secondSize) {
-				diff = -d.firstSize;
-				suffix = '(deleted chunk)';
-			} else {
-				diff = d.secondSize - d.firstSize;
-			}
-			const diffText = diff >= 0 ? `+${diff} bytes` : `${diff} bytes`;
-			const text = `${diffText} ${d.firstHash} -> ${d.secondHash} ${suffix}`;
-			return (
-				<span>
-					{d.chunk}: {text}
-					<br />
-				</span>
-			);
-		});
-	}
-
-	return (
-		<div>
-			<b>Delta:</b>
-			<br />
-			{content}
-		</div>
-	);
-};
 
 function pushParamsEqual(paramsA, paramsB) {
 	return ['sha', 'prevSha', 'size'].every(prop => paramsA[prop] === paramsB[prop]);

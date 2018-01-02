@@ -1,8 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { getBranches, getBranch, getPush, insertPush } from './api';
+import { getBranches, getBranch, getPush, getDelta, insertPush } from './api';
 import Masterbar from './Masterbar';
 import Select from './Select';
+import Delta from './Delta';
 
 const CommitMessage = ({ message }) => {
 	const children = [];
@@ -80,10 +81,11 @@ class BranchView extends React.Component {
 		const selectedBranch = searchParams.get('branch') || '';
 
 		this.state = {
-			branchList: null,
 			selectedBranch,
+			branchList: null,
 			selectedBranchHead: null,
 			selectedBranchPush: null,
+			selectedBranchDelta: null,
 		};
 	}
 
@@ -112,8 +114,16 @@ class BranchView extends React.Component {
 			created_at: commit.committer.date,
 		};
 		this.setState({ selectedBranchHead: head });
+
 		const pushResponse = await getPush(sha);
-		this.setState({ selectedBranchPush: pushResponse.data.push });
+		const { push } = pushResponse.data;
+		if (!push) {
+			return;
+		}
+		this.setState({ selectedBranchPush: push });
+
+		const deltaResponse = await getDelta('gzip_size', push.sha, push.ancestor);
+		this.setState({ selectedBranchDelta: deltaResponse.data.delta });
 	}
 
 	selectBranch = event => {
@@ -122,6 +132,7 @@ class BranchView extends React.Component {
 			selectedBranch,
 			selectedBranchHead: null,
 			selectedBranchPush: null,
+			selectedBranchDelta: null,
 		});
 		this.loadBranchHead(selectedBranch);
 	};
@@ -150,6 +161,16 @@ class BranchView extends React.Component {
 		return <BranchPushSubmit branch={selectedBranch} commit={selectedBranchHead} />;
 	}
 
+	renderBranchDelta() {
+		const { selectedBranchDelta } = this.state;
+
+		if (!selectedBranchDelta) {
+			return null;
+		}
+
+		return <Delta delta={selectedBranchDelta} />;
+	}
+
 	render() {
 		const { branchList, selectedBranch, selectedBranchHead, selectedBranchPush } = this.state;
 
@@ -163,6 +184,7 @@ class BranchView extends React.Component {
 					</p>
 					{this.renderBranchCommit()}
 					{this.renderBranchPush()}
+					{this.renderBranchDelta()}
 				</div>
 			</div>
 		);
