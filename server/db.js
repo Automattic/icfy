@@ -1,5 +1,4 @@
 const _ = require('lodash');
-const co = require('co');
 const knex = require('knex');
 const config = require('./knexfile');
 const K = knex(config);
@@ -42,22 +41,24 @@ exports.getChartData = (period, chunk) => {
 		lastCount = Number(lastReMatch[1]);
 	}
 	const branch = 'master';
-	return K('stats')
-		.select()
-		.where({ branch, chunk })
+	return K.select('stats.*')
+		.from('stats')
+		.join('pushes', 'stats.sha', 'pushes.sha')
+		.where({ 'pushes.branch': branch, 'stats.chunk': chunk })
 		.orderBy('created_at', 'desc')
 		.limit(lastCount)
 		.then(res => _.sortBy(res, 'created_at'));
-}
+};
 
-exports.getPushDelta = co.wrap(function*(size, first, second) {
-	const [firstStats, secondStats] = yield Promise.all(
-		[first, second].map(sha =>
-			K('stats')
-				.select()
-				.where('sha', sha)
-		)
-	);
+const getPushStats = sha =>
+	K('stats')
+		.select()
+		.where('sha', sha);
+
+exports.getPushStats = getPushStats;
+
+exports.getPushDelta = async function(size, first, second) {
+	const [firstStats, secondStats] = await Promise.all([first, second].map(getPushStats));
 
 	const deltas = [];
 	for (const firstStat of firstStats) {
@@ -86,4 +87,4 @@ exports.getPushDelta = co.wrap(function*(size, first, second) {
 	}
 
 	return deltas;
-});
+};

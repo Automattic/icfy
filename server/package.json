@@ -10,12 +10,14 @@
   "license": "ISC",
   "dependencies": {
     "axios": "^0.16.2",
+    "body-parser": "^1.18.2",
     "co": "^4.6.0",
     "express": "^4.15.4",
     "knex": "^0.13.0",
     "lodash": "^4.17.4",
     "mysql": "^2.14.1",
     "nconf": "^0.8.4",
+    "text-table": "^0.2.0",
     "webpack-bundle-analyzer": "^2.9.0"
   }
 }

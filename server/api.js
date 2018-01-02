@@ -1,19 +1,31 @@
+const _ = require('lodash');
 const express = require('express');
+const bodyParser = require('body-parser');
 const db = require('./db');
+const github = require('./github');
 
 const port = 5000;
 const app = express();
 
 app.use(cors);
+app.use(bodyParser.json());
+
 app.get('/chunks', getChunks);
 app.get('/chart/:period/:chunk', getChart);
+app.get('/push', getPush);
 app.get('/push/:sha', getPush);
+app.post('/push', insertPush);
+app.get('/pushstats', getPushStats);
 app.get('/delta/:size/:first/:second', getPushDelta);
+app.get('/branches', getBranches);
+app.get('/branch', getBranch);
 
 app.listen(port, () => console.log('API service is running on port', port));
 
 function cors(req, res, next) {
 	res.append('Access-Control-Allow-Origin', '*');
+	res.append('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+	res.append('Access-Control-Allow-Headers', 'content-type');
 	next();
 }
 
@@ -23,7 +35,8 @@ const reportError = res => error => {
 };
 
 function getChunks(req, res) {
-	db.getKnownChunks()
+	db
+		.getKnownChunks()
 		.then(chunks => res.json({ chunks }))
 		.catch(reportError(res));
 }
@@ -31,23 +44,77 @@ function getChunks(req, res) {
 function getChart(req, res) {
 	const { period, chunk } = req.params;
 
-	db.getChartData(period, chunk)
+	db
+		.getChartData(period, chunk)
 		.then(data => res.json({ data }))
 		.catch(reportError(res));
 }
 
 function getPush(req, res) {
-	const { sha } = req.params;
+	const { sha } = _.defaults(req.params, req.query);
 
-	db.getPush(sha)
-		.then(([ push = null ]) => res.json({ push }))
-		.catch(reportError(res))
+	db
+		.getPush(sha)
+		.then(([push = null]) => res.json({ push }))
+		.catch(reportError(res));
+}
+
+function insertPush(req, res) {
+	const push = req.body;
+
+	if (!push) {
+		res.status(500).json({ error: 'Missing POST body' });
+	}
+
+	if (!push.branch || push.branch === 'master') {
+		res.status(500).json({ error: 'Invalid branch' });
+		return;
+	}
+
+	if (!push.ancestor) {
+		res.status(500).json({ error: 'Missing ancestor' });
+		return;
+	}
+
+	db
+		.insertPush(push)
+		.then(() => res.json({}))
+		.catch(reportError(res));
+}
+
+function getPushStats(req, res) {
+	const { sha } = req.query;
+
+	db
+		.getPushStats(sha)
+		.then(stats => res.json({ stats }))
+		.catch(reportError(res));
 }
 
 function getPushDelta(req, res) {
 	const { size, first, second } = req.params;
 
-	db.getPushDelta(size, first, second)
+	db
+		.getPushDelta(size, first, second)
 		.then(delta => res.json({ delta }))
+		.catch(reportError(res));
+}
+
+function getBranches(req, res) {
+	github
+		.getBranches()
+		.then(response => {
+			const branches = response.data.map(branch => branch.ref.replace(/^refs\/heads\//, ''));
+			res.json({ branches });
+		})
+		.catch(reportError(res));
+}
+
+function getBranch(req, res) {
+	const { branch } = req.query;
+
+	github
+		.getBranch(branch)
+		.then(response => res.json({ branch: response.data }))
 		.catch(reportError(res));
 }
