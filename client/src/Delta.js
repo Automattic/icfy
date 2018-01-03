@@ -3,9 +3,15 @@ import table from 'text-table';
 
 const sizes = ['stat_size', 'parsed_size', 'gzip_size'];
 
-const addSignAndUnit = n => {
+const addSignAndBytes = n => {
 	const sign = n >= 0 ? '+' : '';
 	return `${sign}${n} B`;
+};
+
+const formatPercent = p => {
+	const sign = p >= 0 ? '+' : '';
+	const withOneDecimal = p.toFixed(1);
+	return `${sign}${withOneDecimal}%`;
 };
 
 const getSuffix = d => {
@@ -18,20 +24,34 @@ const getSuffix = d => {
 };
 
 const DeltaTable = ({ delta }) => {
+	const sizeHeaders = [];
+	for (const size of sizes) {
+		// common header for the bytes and percent columns
+		sizeHeaders.push(size);
+		sizeHeaders.push('');
+	}
+
 	const tableData = [
 		// header columns
-		['chunk', ...sizes],
+		['chunk', ...sizeHeaders],
 	];
 
 	for (const d of delta) {
-		tableData.push([
-			d.chunk,
-			...sizes.map(size => addSignAndUnit(d.deltaSizes[size])),
-			getSuffix(d),
-		]);
+		const chunkColumns = [d.chunk];
+		for (const size of sizes) {
+			chunkColumns.push(addSignAndBytes(d.deltaSizes[size]));
+			if (d.deltaPercents && d.deltaPercents[size]) {
+				chunkColumns.push(`(${formatPercent(d.deltaPercents[size])})`);
+			} else {
+				chunkColumns.push('');
+			}
+		}
+		chunkColumns.push(getSuffix(d));
+
+		tableData.push(chunkColumns);
 	}
 
-	const tableText = table(tableData, { align: ['l', 'r', 'r', 'r'] });
+	const tableText = table(tableData, { align: ['l', 'r', 'r', 'r', 'r', 'r', 'r', 'l'] });
 
 	return <div className="text-table">{tableText}</div>;
 };

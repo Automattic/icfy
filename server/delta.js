@@ -20,6 +20,21 @@ function deltaSizesOf(firstSizes, secondSizes) {
 	return _.mapValues(firstSizes, (firstSize, type) => secondSizes[type] - firstSize);
 }
 
+function deltaPercentsOf(firstSizes, deltaSizes) {
+	if (!firstSizes) {
+		// new chunk, percent change has no meaning
+		return null;
+	}
+
+	return _.mapValues(firstSizes, (firstSize, type) => {
+		if (!firstSize) {
+			return null;
+		}
+
+		return deltaSizes[type] / firstSize * 100;
+	});
+}
+
 function deltaFromStats(firstStats, secondStats, size) {
 	const deltas = [];
 
@@ -33,6 +48,7 @@ function deltaFromStats(firstStats, secondStats, size) {
 			const firstSizes = sizesOf(firstStat);
 			const secondSizes = sizesOf(secondStat);
 			const deltaSizes = deltaSizesOf(firstSizes, secondSizes);
+			const deltaPercents = deltaPercentsOf(firstSizes, deltaSizes);
 
 			deltas.push({
 				chunk,
@@ -41,6 +57,7 @@ function deltaFromStats(firstStats, secondStats, size) {
 				secondHash,
 				secondSizes,
 				deltaSizes,
+				deltaPercents,
 			});
 		}
 	}
