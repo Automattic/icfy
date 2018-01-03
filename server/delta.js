@@ -1,0 +1,77 @@
+const _ = require('lodash');
+
+const sizes = ['stat_size', 'parsed_size', 'gzip_size'];
+
+function sizesOf(stat) {
+	return stat ? _.pick(stat, sizes) : null;
+}
+
+function deltaSizesOf(firstSizes, secondSizes) {
+	if (!firstSizes) {
+		// new chunk, the delta is the full size of the second version
+		return secondSizes;
+	}
+
+	if (!secondSizes) {
+		// deleted chunk, the delta is the negative full size of the first version
+		return _.mapValues(secondSizes, size => -size);
+	}
+
+	return _.mapValues(firstSizes, (firstSize, type) => secondSizes[type] - firstSize);
+}
+
+function deltaFromStats(firstStats, secondStats, size) {
+	const deltas = [];
+
+	for (const firstStat of firstStats) {
+		const chunk = firstStat.chunk;
+		const firstHash = firstStat.hash;
+		const secondStat = secondStats.find(s => s.chunk === chunk);
+		const secondHash = secondStat ? secondStat.hash : null;
+
+		if (firstHash !== secondHash) {
+			const firstSizes = sizesOf(firstStat);
+			const secondSizes = sizesOf(secondStat);
+			const deltaSizes = deltaSizesOf(firstSizes, secondSizes);
+
+			deltas.push({
+				chunk,
+				firstHash,
+				firstSizes,
+				secondHash,
+				secondSizes,
+				deltaSizes,
+			});
+		}
+	}
+
+	for (const secondStat of secondStats) {
+		if (!firstStats.find(s => s.chunk === secondStat.chunk)) {
+			const firstSizes = null;
+			const secondSizes = sizesOf(secondStat);
+			const deltaSizes = deltaSizesOf(firstSizes, secondSizes);
+
+			deltas.push({
+				chunk: secondStat.chunk,
+				firstHash: null,
+				firstSizes,
+				secondHash: secondStat.hash,
+				secondSizes,
+				deltaSizes,
+			});
+		}
+	}
+
+	if (size) {
+		// decorate with legacy properties
+		return deltas.map(d => ({
+			...d,
+			firstSize: _.get(d.firstSizes, size, null),
+			secondSize: _.get(d.secondSize, size, null),
+		}));
+	} else {
+		return deltas;
+	}
+}
+
+exports.deltaFromStats = deltaFromStats;

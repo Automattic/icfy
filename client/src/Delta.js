@@ -1,26 +1,34 @@
 import React from 'react';
 import table from 'text-table';
 
-const DeltaTable = ({ size, delta }) => {
+const sizes = ['stat_size', 'parsed_size', 'gzip_size'];
+
+const addSignAndUnit = n => {
+	const sign = n >= 0 ? '+' : '';
+	return `${sign}${n} B`;
+};
+
+const getSuffix = d => {
+	if (!d.firstHash) {
+		return '(new chunk)';
+	} else if (!d.secondHash) {
+		return '(deleted chunk)';
+	}
+	return '';
+};
+
+const DeltaTable = ({ delta }) => {
 	const tableData = [
 		// header columns
-		['chunk', size, 'old_hash', 'new_hash'],
+		['chunk', ...sizes],
 	];
 
 	for (const d of delta) {
-		let diff,
-			suffix = '';
-		if (!d.firstSize) {
-			diff = d.secondSize;
-			suffix = '(new chunk)';
-		} else if (!d.secondSize) {
-			diff = -d.firstSize;
-			suffix = '(deleted chunk)';
-		} else {
-			diff = d.secondSize - d.firstSize;
-		}
-		const diffText = diff >= 0 ? `+${diff} bytes` : `${diff} bytes`;
-		tableData.push([d.chunk, diffText, d.firstHash || '', d.secondHash || '', suffix]);
+		tableData.push([
+			d.chunk,
+			...sizes.map(size => addSignAndUnit(d.deltaSizes[size])),
+			getSuffix(d),
+		]);
 	}
 
 	const tableText = table(tableData, { align: ['l', 'r', 'r', 'r'] });

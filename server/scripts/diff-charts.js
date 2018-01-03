@@ -1,7 +1,9 @@
+const _ = require('lodash');
 const { get } = require('axios');
 const { readFileSync } = require('fs');
 const { readStatsFromFile, getViewerData } = require('webpack-bundle-analyzer/lib/analyzer');
 const table = require('text-table');
+const { deltaFromStats } = require('../delta.js');
 
 const apiURL = 'http://localhost:5000';
 
@@ -37,74 +39,15 @@ function statsFrom(slug) {
 
 const sizes = ['stat_size', 'parsed_size', 'gzip_size'];
 
-function sizesOf(stat) {
-	return stat ? sizes.map(size => stat[size]) : null;
-}
+const addSign = n => {
+	const sign = n > 0 ? '+' : '';
+	return `${sign}${n}`;
+};
 
-function deltaSizesOf(firstSizes, secondSizes) {
-	if (!firstSizes) {
-		// new chunk, the delta is the full size of the second version
-		return secondSizes;
-	}
-
-	if (!secondSizes) {
-		// deleted chunk, the delta is the negative full size of the first version
-		return secondSizes.map(size => -size);
-	}
-
-	return firstSizes.map((firstSize, i) => secondSizes[i] - firstSize);
-}
-
-const printDeltas = deltas =>
-	deltas.map(delta => {
-		const sign = delta > 0 ? '+' : '';
-		return `${sign}${delta}`;
-	});
-
-function deltaFromStats(firstStats, secondStats) {
-	const deltas = [];
-
-	for (const firstStat of firstStats) {
-		const chunk = firstStat.chunk;
-		const firstHash = firstStat.hash;
-		const secondStat = secondStats.find(s => s.chunk === chunk);
-		const secondHash = secondStat ? secondStat.hash : null;
-
-		if (firstHash !== secondHash) {
-			const firstSizes = sizesOf(firstStat);
-			const secondSizes = sizesOf(secondStat);
-			const deltaSizes = deltaSizesOf(firstSizes, secondSizes);
-
-			deltas.push({
-				chunk,
-				firstHash,
-				firstSizes,
-				secondHash,
-				secondSizes,
-				deltaSizes,
-			});
-		}
-	}
-
-	for (const secondStat of secondStats) {
-		if (!firstStats.find(s => s.chunk === secondStat.chunk)) {
-			const firstSizes = null;
-			const secondSizes = sizesOf(secondStat);
-			const deltaSizes = deltaSizesOf(firstSizes, secondSizes);
-
-			deltas.push({
-				chunk: secondStat.chunk,
-				firstHash: null,
-				firstSizes,
-				secondHash: secondStat.hash,
-				secondSizes,
-				deltaSizes,
-			});
-		}
-	}
-
-	return deltas;
-}
+const printDeltas = deltas => {
+	const signedValues = _.mapValues(deltas, addSign);
+	return sizes.map(size => signedValues[size]);
+};
 
 function formatDeltaAsTable(delta) {
 	const tableData = [
@@ -112,9 +55,9 @@ function formatDeltaAsTable(delta) {
 		['chunk', ...sizes, 'old_hash', 'new_hash'],
 	];
 
-	const totalDeltas = [0, 0, 0];
+	const totalDeltas = _.fromPairs(sizes.map(size => [size, 0]));
 	for (d of delta) {
-		d.deltaSizes.forEach((deltaSize, i) => (totalDeltas[i] += deltaSize));
+		sizes.forEach(size => (totalDeltas[size] += d.deltaSizes[size]));
 		tableData.push([d.chunk, ...printDeltas(d.deltaSizes), d.firstHash, d.secondHash]);
 	}
 	tableData.push(['Total', ...printDeltas(totalDeltas)]);
@@ -124,11 +67,9 @@ function formatDeltaAsTable(delta) {
 
 const firstSlug = process.argv[2];
 const secondSlug = process.argv[3];
-console.log('args:', firstSlug, secondSlug);
 
 Promise.all([statsFrom(firstSlug), statsFrom(secondSlug)])
 	.then(([firstStats, secondStats]) => {
-		console.log('fs:', firstStats);
 		const delta = deltaFromStats(firstStats, secondStats);
 		const deltaTable = formatDeltaAsTable(delta);
 		console.log(deltaTable);

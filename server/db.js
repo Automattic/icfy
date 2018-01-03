@@ -1,6 +1,8 @@
 const _ = require('lodash');
 const knex = require('knex');
 const config = require('./knexfile');
+const { deltaFromStats } = require('./delta');
+
 const K = knex(config);
 
 exports.getPush = sha =>
@@ -60,32 +62,5 @@ exports.getPushStats = getPushStats;
 
 exports.getPushDelta = async function(size, first, second) {
 	const [firstStats, secondStats] = await Promise.all([first, second].map(getPushStats));
-
-	const deltas = [];
-	for (const firstStat of firstStats) {
-		const chunk = firstStat.chunk;
-		const firstHash = firstStat.hash;
-		const firstSize = firstStat[size];
-		const secondStat = secondStats.find(s => s.chunk === chunk);
-		const secondHash = secondStat ? secondStat.hash : null;
-		const secondSize = secondStat ? secondStat[size] : null;
-
-		if (firstHash !== secondHash) {
-			deltas.push({ chunk, firstHash, firstSize, secondHash, secondSize });
-		}
-	}
-
-	for (const secondStat of secondStats) {
-		if (!firstStats.find(s => s.chunk === secondStat.chunk)) {
-			deltas.push({
-				chunk: secondStat.chunk,
-				firstHash: null,
-				firstSize: null,
-				secondHash: secondStat.hash,
-				secondSize: secondStat[size],
-			});
-		}
-	}
-
-	return deltas;
+	return deltaFromStats(firstStats, secondStats, size);
 };
