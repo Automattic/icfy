@@ -84,7 +84,7 @@ function deltaFromStats(firstStats, secondStats, size) {
 		return deltas.map(d => ({
 			...d,
 			firstSize: _.get(d.firstSizes, size, null),
-			secondSize: _.get(d.secondSize, size, null),
+			secondSize: _.get(d.secondSizes, size, null),
 		}));
 	} else {
 		return deltas;
