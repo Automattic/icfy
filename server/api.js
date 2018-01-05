@@ -11,6 +11,7 @@ app.use(cors);
 app.use(bodyParser.json());
 
 app.get('/chunks', getChunks);
+app.get('/chart', getChart);
 app.get('/chart/:period/:chunk', getChart);
 app.get('/push', getPush);
 app.get('/push/:sha', getPush);
@@ -43,7 +44,7 @@ function getChunks(req, res) {
 }
 
 function getChart(req, res) {
-	const { period, chunk } = req.params;
+	const { period, chunk } = _.defaults(req.params, req.query);
 
 	db
 		.getChartData(period, chunk)
