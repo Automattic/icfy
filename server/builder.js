@@ -4,7 +4,7 @@ const { join } = require('path');
 const co = require('co');
 const { readStatsFromFile, getViewerData } = require('webpack-bundle-analyzer/lib/analyzer');
 
-const { getQueuedPushes, markPushAsProcessed, insertChunkStats } = require('./db');
+const { getQueuedPushes, markPushAsProcessed, setPushAncestor, insertChunkStats } = require('./db');
 
 const statsDir = join(process.cwd(), 'stats');
 const repoDir = join(process.cwd(), 'wp-calypso');
@@ -60,9 +60,10 @@ const processPush = co.wrap(function*(push) {
 	yield cmd(`git checkout ${push.sha}`);
 
 	// determine the ancestor
-	if (push.branch !== 'master') {
+	if (push.branch !== 'master' && !push.ancestor) {
 		const ancestorSha = yield cmd('git merge-base HEAD origin/master', { returnStdout: true });
 		console.log(`ancestor of ${push.branch} (${push.sha}): [${ancestorSha}]`);
+		yield setPushAncestor(push.sha, ancestorSha);
 	}
 
 	// update node_modules

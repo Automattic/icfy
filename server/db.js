@@ -29,6 +29,11 @@ exports.markPushAsProcessed = sha =>
 		.update('processed', true)
 		.where('sha', sha);
 
+exports.setPushAncestor = (sha, ancestorSha) =>
+	K('pushes')
+		.update('ancestor', ancestorSha)
+		.where('sha', sha);
+
 exports.insertChunkStats = stats => K('stats').insert(stats);
 
 exports.getKnownChunks = () =>
