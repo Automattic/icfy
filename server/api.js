@@ -88,7 +88,7 @@ function getPushStats(req, res) {
 }
 
 function getPushDelta(req, res) {
-	const { first, second } = _.default(req.params, req.query);
+	const { first, second } = _.defaults(req.params, req.query);
 
 	db
 		.getPushDelta(first, second)
