@@ -35,7 +35,7 @@ function deltaPercentsOf(firstSizes, deltaSizes) {
 	});
 }
 
-function deltaFromStats(firstStats, secondStats, size) {
+function deltaFromStats(firstStats, secondStats) {
 	const deltas = [];
 
 	for (const firstStat of firstStats) {
@@ -79,16 +79,7 @@ function deltaFromStats(firstStats, secondStats, size) {
 		}
 	}
 
-	if (size) {
-		// decorate with legacy properties
-		return deltas.map(d => ({
-			...d,
-			firstSize: _.get(d.firstSizes, size, null),
-			secondSize: _.get(d.secondSizes, size, null),
-		}));
-	} else {
-		return deltas;
-	}
+	return deltas;
 }
 
 exports.deltaFromStats = deltaFromStats;

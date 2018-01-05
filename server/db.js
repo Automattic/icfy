@@ -65,7 +65,7 @@ const getPushStats = sha =>
 
 exports.getPushStats = getPushStats;
 
-exports.getPushDelta = async function(size, first, second) {
+exports.getPushDelta = async function(first, second) {
 	const [firstStats, secondStats] = await Promise.all([first, second].map(getPushStats));
-	return deltaFromStats(firstStats, secondStats, size);
+	return deltaFromStats(firstStats, secondStats);
 };

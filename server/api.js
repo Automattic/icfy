@@ -16,6 +16,7 @@ app.get('/push', getPush);
 app.get('/push/:sha', getPush);
 app.post('/push', insertPush);
 app.get('/pushstats', getPushStats);
+app.get('/delta', getPushDelta);
 app.get('/delta/:size/:first/:second', getPushDelta);
 app.get('/branches', getBranches);
 app.get('/branch', getBranch);
@@ -87,10 +88,10 @@ function getPushStats(req, res) {
 }
 
 function getPushDelta(req, res) {
-	const { size, first, second } = req.params;
+	const { first, second } = _.default(req.params, req.query);
 
 	db
-		.getPushDelta(size, first, second)
+		.getPushDelta(first, second)
 		.then(delta => res.json({ delta }))
 		.catch(reportError(res));
 }
