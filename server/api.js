@@ -71,11 +71,6 @@ function insertPush(req, res) {
 		return;
 	}
 
-	if (!push.ancestor) {
-		res.status(500).json({ error: 'Missing ancestor' });
-		return;
-	}
-
 	db
 		.insertPush(push)
 		.then(() => res.json({}))
