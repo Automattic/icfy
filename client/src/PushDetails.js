@@ -41,13 +41,12 @@ const Push = ({ push }) => (
 );
 
 function pushParamsEqual(paramsA, paramsB) {
-	return ['sha', 'prevSha', 'size'].every(prop => paramsA[prop] === paramsB[prop]);
+	return ['sha', 'prevSha'].every(prop => paramsA[prop] === paramsB[prop]);
 }
 
 class PushDetails extends React.Component {
 	static defaultProps = {
 		debounceDelay: 0,
-		size: 'gzip_size',
 	};
 
 	state = {
@@ -91,7 +90,7 @@ class PushDetails extends React.Component {
 			return;
 		}
 
-		const deltaResponse = await getDelta(pushParams.size, pushParams.sha, pushParams.prevSha);
+		const deltaResponse = await getDelta(pushParams.prevSha, pushParams.sha);
 
 		if (!pushParamsEqual(this.props, pushParams)) {
 			return;
@@ -101,7 +100,7 @@ class PushDetails extends React.Component {
 	}
 
 	render() {
-		const { size, sha, prevSha } = this.props;
+		const { sha, prevSha } = this.props;
 		const { push, delta } = this.state;
 
 		if (!sha) {
@@ -113,7 +112,7 @@ class PushDetails extends React.Component {
 				<b>Commit:</b> <PushLink sha={sha} prevSha={prevSha} /> <GitHubLink sha={sha} />
 				<br />
 				<Push push={push} />
-				<Delta size={size} delta={delta} />
+				<Delta delta={delta} />
 			</div>
 		);
 	}

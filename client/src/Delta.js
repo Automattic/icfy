@@ -14,16 +14,23 @@ const formatPercent = p => {
 	return `${sign}${withOneDecimal}%`;
 };
 
-const getSuffix = d => {
+const getPercentText = (d, size) => {
 	if (!d.firstHash) {
-		return '(new chunk)';
-	} else if (!d.secondHash) {
-		return '(deleted chunk)';
+		return '(new)';
 	}
+
+	if (!d.secondHash) {
+		return '(deleted)';
+	}
+
+	if (d.deltaPercents && d.deltaPercents[size]) {
+		return `(${formatPercent(d.deltaPercents[size])})`;
+	}
+
 	return '';
 };
 
-const DeltaTable = ({ delta }) => {
+function printDeltaTable(deltas) {
 	const sizeHeaders = [];
 	for (const size of sizes) {
 		// common header for the bytes and percent columns
@@ -36,34 +43,27 @@ const DeltaTable = ({ delta }) => {
 		['chunk', ...sizeHeaders],
 	];
 
-	for (const d of delta) {
+	for (const d of deltas) {
 		const chunkColumns = [d.chunk];
 		for (const size of sizes) {
 			chunkColumns.push(addSignAndBytes(d.deltaSizes[size]));
-			if (d.deltaPercents && d.deltaPercents[size]) {
-				chunkColumns.push(`(${formatPercent(d.deltaPercents[size])})`);
-			} else {
-				chunkColumns.push('');
-			}
+			chunkColumns.push(getPercentText(d, size));
 		}
-		chunkColumns.push(getSuffix(d));
 
 		tableData.push(chunkColumns);
 	}
 
-	const tableText = table(tableData, { align: ['l', 'r', 'r', 'r', 'r', 'r', 'r', 'l'] });
+	return table(tableData, { align: ['l', 'r', 'r', 'r', 'r', 'r', 'r'] });
+}
 
-	return <div className="text-table">{tableText}</div>;
-};
-
-const Delta = ({ size, delta }) => {
+const Delta = ({ delta }) => {
 	let content;
 	if (!delta) {
-		content = 'building...';
+		content = '...';
 	} else if (delta.length === 0) {
 		content = 'no changes in production JS';
 	} else {
-		content = <DeltaTable size={size} delta={delta} />;
+		content = <div className="text-table">{printDeltaTable(delta)}</div>;
 	}
 
 	return (

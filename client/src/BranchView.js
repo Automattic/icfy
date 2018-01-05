@@ -40,26 +40,18 @@ const BranchCommit = ({ commit }) => {
 };
 
 class BranchPushSubmit extends React.Component {
-	state = { ancestor: '' };
-
-	setAncestor = event => this.setState({ ancestor: event.target.value });
-
 	handleSubmit = () =>
 		insertPush({
 			...this.props.commit,
 			branch: this.props.branch,
-			ancestor: this.state.ancestor,
 		});
 
 	render() {
-		const { ancestor } = this.state;
-
 		return (
 			<p>
-				<label>Ancestor SHA:</label>
-				<input className="input" value={ancestor} onChange={this.setAncestor} />
-				<button className="button" disabled={!ancestor} onClick={this.handleSubmit}>
-					Build
+				We don't have stats for this push.
+				<button className="button" onClick={this.handleSubmit}>
+					Build Them!
 				</button>
 			</p>
 		);
@@ -108,22 +100,22 @@ class BranchView extends React.Component {
 			message: commit.message.split('\n')[0],
 			created_at: commit.committer.date,
 		};
-		this.setState({ selectedBranchHead: head });
+
+		this.setState({
+			selectedBranchHead: head,
+			selectedBranchPush: 'loading',
+		});
 
 		const pushResponse = await getPush(sha);
 		const { push } = pushResponse.data;
 
-		if (!push) {
-			return;
-		}
-
 		this.setState({ selectedBranchPush: push });
 
-		if (!push.ancestor) {
+		if (!push || !push.ancestor) {
 			return;
 		}
 
-		const deltaResponse = await getDelta('gzip_size', push.sha, push.ancestor);
+		const deltaResponse = await getDelta(push.ancestor, push.sha);
 		this.setState({ selectedBranchDelta: deltaResponse.data.delta });
 	}
 
@@ -148,24 +140,30 @@ class BranchView extends React.Component {
 		return <BranchCommit commit={selectedBranchHead} />;
 	}
 
-	renderBranchPushSubmit() {
-		const { selectedBranch, selectedBranchHead, selectedBranchPush } = this.state;
+	renderBranchPushInfo() {
+		const {
+			selectedBranch,
+			selectedBranchHead,
+			selectedBranchPush,
+			selectedBranchDelta,
+		} = this.state;
 
-		if (selectedBranchHead && !selectedBranchPush) {
-			return <BranchPushSubmit branch={selectedBranch} commit={selectedBranchHead} />;
-		}
-
-		return null;
-	}
-
-	renderBranchDelta() {
-		const { selectedBranchDelta } = this.state;
-
-		if (!selectedBranchDelta) {
+		if (!selectedBranchHead) {
 			return null;
 		}
 
-		return <Delta size="gzip_size" delta={selectedBranchDelta} />;
+		if (selectedBranchPush === 'loading') {
+			return <p>...</p>;
+		}
+		if (!selectedBranchPush) {
+			return <BranchPushSubmit branch={selectedBranch} commit={selectedBranchHead} />;
+		}
+
+		if (!selectedBranchPush.processed || !selectedBranchPush.ancestor) {
+			return <p>Building...</p>;
+		}
+
+		return <Delta delta={selectedBranchDelta} />;
 	}
 
 	render() {
@@ -180,8 +178,7 @@ class BranchView extends React.Component {
 						<Select value={selectedBranch} onChange={this.selectBranch} options={branchList} />
 					</p>
 					{this.renderBranchCommit()}
-					{this.renderBranchPushSubmit()}
-					{this.renderBranchDelta()}
+					{this.renderBranchPushInfo()}
 				</div>
 			</div>
 		);

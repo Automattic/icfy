@@ -165,7 +165,6 @@ class ChartView extends React.Component {
 					<PushDetails
 						sha={this.state.currentPushSha}
 						prevSha={this.state.currentPrevPushSha}
-						size={this.state.selectedSize}
 						debounceDelay={500}
 					/>
 				</div>
