@@ -17,43 +17,35 @@ function sleep(ms) {
 	return new Promise(r => setTimeout(r, ms));
 }
 
-function prcLog(data) {
-	// console.log(`${data}`);
+function startProc(cmdline, env, useShell) {
+	if (useShell) {
+		return exec(cmdline, { env });
+	}
+
+	const [command, ...args] = cmdline.split(' ');
+	return spawn(command, args, { env });
 }
 
-function cmd(cmdline, env = {}) {
+function cmd(cmdline, options = {}) {
 	return new Promise((resolve, reject) => {
 		log(`Executing: ${cmdline} in ${process.cwd()}`);
-		const [command, ...args] = cmdline.split(' ');
-		env = Object.assign({}, process.env, env);
-		const proc = spawn(command, args, { shell: true, env });
-		proc.stdout.on('data', prcLog);
-		proc.stderr.on('data', prcLog);
+		env = Object.assign({}, process.env, options.env);
+		const proc = startProc(cmdline, env, options.useShell);
+
+		let stdout;
+		if (options.returnStdout) {
+			stdout = '';
+			proc.stdout.on('data', data => (stdout += data));
+		}
+
 		proc.on('close', code => {
 			if (code === 0) {
-				resolve(code);
+				resolve(options.returnStdout ? stdout.trim() : code);
 			} else {
 				reject(`${cmdline} exited with code ${code}`);
 			}
 		});
-		proc.on('error', err => reject(`${cmdline} failed to execute: ${err}`));
-	});
-}
 
-function exe(cmdline, env = {}) {
-	return new Promise((resolve, reject) => {
-		log(`Executing: ${cmdline} in ${process.cwd()}`);
-		env = Object.assign({}, process.env, env);
-		const proc = exec(cmdline, { env });
-		proc.stdout.on('data', prcLog);
-		proc.stderr.on('data', prcLog);
-		proc.on('close', code => {
-			if (code === 0) {
-				resolve(code);
-			} else {
-				reject(`${cmdline} exited with code ${code}`);
-			}
-		});
 		proc.on('error', err => reject(`${cmdline} failed to execute: ${err}`));
 	});
 }
@@ -67,19 +59,27 @@ const processPush = co.wrap(function*(push) {
 	// checkout the revision we want
 	yield cmd(`git checkout ${push.sha}`);
 
+	// determine the ancestor
+	if (push.branch !== 'master') {
+		const ancestorSha = yield cmd('git merge-base HEAD origin/master', { returnStdout: true });
+		console.log(`ancestor of ${push.branch} (${push.sha}): [${ancestorSha}]`);
+	}
+
+	// update node_modules
+	yield cmd('npm install');
+
 	// run the build
-	yield exe('npm run -s env -- node --max_old_space_size=8192 ./node_modules/.bin/webpack --config webpack.config.js --profile --json > stats.json', {
-		NODE_ENV: 'production',
-		WEBPACK_OUTPUT_JSON: 1
-	});
+	yield cmd(
+		'npm run -s env -- node --max_old_space_size=8192 ./node_modules/.bin/webpack --config webpack.config.js --profile --json > stats.json',
+		{
+			useShell: true,
+			env: { NODE_ENV: 'production' },
+		}
+	);
 
 	// generate the chart data
 	log('Analyzing the bundle stats');
 	yield analyzeBundle(push);
-
-	// save the stat files
-	// yield cmd(`mv stats.json ${statsDir}/${push.sha}-stats.json`);
-	// yield cmd(`mv chart.json ${statsDir}/${push.sha}-chart.json`);
 
 	// remove the stat files
 	yield cmd('rm stats.json chart.json');
@@ -97,7 +97,7 @@ const analyzeBundle = co.wrap(function*(push) {
 
 	for (const asset of chart) {
 		const { sha, created_at } = push;
-		const [ chunk, hash ] = asset.label.split('.');
+		const [chunk, hash] = asset.label.split('.');
 
 		const newStat = {
 			sha,
@@ -106,7 +106,7 @@ const analyzeBundle = co.wrap(function*(push) {
 			hash,
 			stat_size: asset.statSize,
 			parsed_size: asset.parsedSize,
-			gzip_size: asset.gzipSize
+			gzip_size: asset.gzipSize,
 		};
 		yield insertChunkStats(newStat);
 		log(`Recorded new stat: sha=${sha} chunk=${chunk}`);
