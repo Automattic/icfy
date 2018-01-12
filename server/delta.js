@@ -14,7 +14,7 @@ function deltaSizesOf(firstSizes, secondSizes) {
 
 	if (!secondSizes) {
 		// deleted chunk, the delta is the negative full size of the first version
-		return _.mapValues(secondSizes, size => -size);
+		return _.mapValues(firstSizes, size => -size);
 	}
 
 	return _.mapValues(firstSizes, (firstSize, type) => secondSizes[type] - firstSize);
