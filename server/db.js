@@ -36,11 +36,15 @@ exports.setPushAncestor = (sha, ancestorSha) =>
 
 exports.insertChunkStats = stats => K('stats').insert(stats);
 
-exports.getKnownChunks = () =>
-	K('stats')
+exports.getKnownChunks = () => {
+	const branch = 'master';
+	return K.select()
 		.distinct('chunk')
-		.select()
+		.from('stats')
+		.join('pushes', 'stats.sha', 'pushes.sha')
+		.where({ 'pushes.branch': branch })
 		.then(res => res.map(row => row.chunk));
+};
 
 exports.getChartData = (period, chunk) => {
 	let lastCount = 200;
