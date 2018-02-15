@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 import { getChartData, getChunkList } from './api';
 import Masterbar from './Masterbar';
@@ -157,7 +158,7 @@ class ChartView extends React.Component {
 					<p>
 						Showing
 						<Select value={this.state.selectedPeriod} onChange={this.changePeriod} options={PERIODS}/>
-						in <b>master</b>
+						in <b>master</b> (choose <Link to="/branch">another branch</Link>)
 					</p>
 					{this.state.chartData && (
 						<Chart chartData={this.state.chartData} onMouseOver={this.showPush} />

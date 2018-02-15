@@ -121,6 +121,7 @@ class BranchView extends React.Component {
 
 	selectBranch = event => {
 		const selectedBranch = event.target.value;
+		this.props.history.push({ search: `?branch=${selectedBranch}` });
 		this.setState({
 			selectedBranch,
 			selectedBranchHead: null,
