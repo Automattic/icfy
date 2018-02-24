@@ -1,8 +1,9 @@
 import React from 'react';
 import { getBranches, getBranch, getPush, getDelta, insertPush } from './api';
 import Masterbar from './Masterbar';
-import Select from './Select';
 import Delta from './Delta';
+import Select from 'react-select';
+import 'react-select/dist/react-select.css';
 
 const CommitMessage = ({ message }) => {
 	const children = [];
@@ -27,7 +28,7 @@ const BranchCommit = ({ commit }) => {
 	}
 
 	return (
-		<p className="push">
+		<div className="push">
 			<b>Commit:</b> {commit.sha}
 			<br />
 			<b>Author:</b> {commit.author}
@@ -35,7 +36,7 @@ const BranchCommit = ({ commit }) => {
 			<b>At:</b> {commit.created_at}
 			<br />
 			<b>Message:</b> <CommitMessage message={commit.message} />
-		</p>
+		</div>
 	);
 };
 
@@ -84,14 +85,23 @@ class BranchView extends React.Component {
 	loadBranches() {
 		getBranches().then(branches => {
 			const branchList = [
-				{ value: '', name: '-- select branch --' },
-				...branches.filter(branch => branch !== 'master'),
+				...branches
+					.filter(branch => branch !== 'master')
+					.map((option) => {
+						return {
+							value: option,
+							label: option,
+						};
+					}),
 			];
 			this.setState({ branchList });
 		});
 	}
 
 	async loadBranchHead(branchName) {
+		if (!branchName) {
+			return;
+		}
 		const branchResponse = await getBranch(branchName);
 		const { sha, author, commit } = branchResponse.commit;
 		const head = {
@@ -119,9 +129,9 @@ class BranchView extends React.Component {
 		this.setState({ selectedBranchDelta: deltaResponse.data.delta });
 	}
 
-	selectBranch = event => {
-		const selectedBranch = event.target.value;
-		this.props.history.push({ search: `?branch=${selectedBranch}` });
+	selectBranch = option => {
+		const selectedBranch = option.value || '';
+		this.props.history.push({ search: (selectedBranch ? `?branch=${selectedBranch}` : '') });
 		this.setState({
 			selectedBranch,
 			selectedBranchHead: null,
@@ -174,12 +184,22 @@ class BranchView extends React.Component {
 			<div className="layout">
 				<Masterbar />
 				<div className="content">
-					<p>
-						<label>Showing stats for branch:</label>
-						<Select value={selectedBranch} onChange={this.selectBranch} options={branchList} />
-					</p>
-					{this.renderBranchCommit()}
-					{this.renderBranchPushInfo()}
+					<label>
+						<h4>Stats for a branch:</h4>
+						<Select
+							placeholder="Choose branch…"
+							loadingPlaceholder="Loading branches…"
+							resetValue=""
+							isLoading={!branchList}
+							value={selectedBranch}
+							onChange={this.selectBranch}
+							options={branchList}
+						/>
+					</label>
+					<div className="branch-info">
+						{this.renderBranchCommit()}
+						{this.renderBranchPushInfo()}
+					</div>
 				</div>
 			</div>
 		);
