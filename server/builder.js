@@ -68,7 +68,10 @@ async function processPush(push) {
 	// update node_modules
 	await cmd('npm install');
 
-	// run the build
+	// build CSS -- the JS build depends on the CSS files
+	await cmd('npm run build-css');
+
+	// run the JS build in webpack analyze mode
 	await cmd(
 		'npm run -s env -- node --max_old_space_size=8192 ./node_modules/.bin/webpack --config webpack.config.js --profile --json > stats.json',
 		{
@@ -84,8 +87,9 @@ async function processPush(push) {
 	// remove the stat files
 	await cmd('rm stats.json chart.json');
 
-	// cleanup after the build
-	await cmd('npm run clean');
+	// cleanup after the build, including the node_modules directory.
+	// we do a clean build for every push
+	await cmd('npm run distclean');
 
 	process.chdir('..');
 }
