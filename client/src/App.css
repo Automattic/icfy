@@ -1,7 +1,3 @@
-.layout {
-
-}
-
 .masterbar {
 	background: #4c5be2;
 	color: white;
@@ -18,21 +14,7 @@
 	z-index: 1;
 }
 
-.sidebar {
-	background: #e9eff3;
-	width: 270px;
-	display: flex;
-	flex-direction: column;
-	position: fixed;
-	top: 46px;
-	bottom: 0;
-	padding: 12px;
-	box-sizing: border-box;
-	overflow: scroll;
-}
-
 .content {
-	margin-left: 270px;
 	margin-top: 46px;
 	padding: 12px;
 }
@@ -61,6 +43,14 @@
 	margin-right: 6px;
 }
 
+.smart-select {
+	display: inline-block;
+	vertical-align: middle;
+	min-width: 500px;
+	margin-left: 6px;
+	margin-right: 6px;
+}
+
 .table {
 	font-family: monospace;
 	flex: auto;
@@ -76,10 +66,6 @@
 }
 
 .branch-info {
-	margin-top: 12px;
-}
-
-.checklist {
 	margin-top: 12px;
 }
 

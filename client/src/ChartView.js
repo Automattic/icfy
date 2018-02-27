@@ -6,55 +6,15 @@ import Masterbar from './Masterbar';
 import Chart from './Chart';
 import PushDetails from './PushDetails';
 import Select from './Select';
+import ChunkList from './ChunkList';
 
 const SIZES = ['stat_size', 'parsed_size', 'gzip_size'];
 const PERIODS = [
 	{ value: 'last200', name: 'last 200 pushes' },
 	{ value: 'last400', name: 'last 400 pushes' },
-	{ value: 'last800', name:'last 800 pushes' },
-	{ value: 'last1600', name:'last 1600 pushes' }
+	{ value: 'last800', name: 'last 800 pushes' },
+	{ value: 'last1600', name: 'last 1600 pushes' },
 ];
-
-class CheckList extends React.Component {
-	static defaultProps = {
-		value: [],
-	};
-
-	handleChange = event => {
-		const { value, onChange } = this.props;
-		const { name, checked } = event.target;
-		if (checked) {
-			onChange([...value, name]);
-		} else {
-			onChange(value.filter(v => v !== name));
-		}
-	};
-
-	render() {
-		const { value, options } = this.props;
-
-		if (!options) {
-			return null;
-		}
-
-		return (
-			<div className="checklist">
-				{options.map(opt => (
-					<div key={opt} className="checklist__item">
-						<input
-							type="checkbox"
-							id={opt}
-							name={opt}
-							checked={value.includes(opt)}
-							onChange={this.handleChange}
-						/>
-						<label htmlFor={opt}>{opt}</label>
-					</div>
-				))}
-			</div>
-		);
-	}
-}
 
 class ChartView extends React.Component {
 	state = {
@@ -142,22 +102,26 @@ class ChartView extends React.Component {
 		return (
 			<div className="layout">
 				<Masterbar />
-				<div className="sidebar">
-					<div>Select the chunks to display:</div>
-					<CheckList
-						value={this.state.selectedChunks}
-						onChange={this.changeChunks}
-						options={this.state.chunks}
-					/>
-				</div>
-				<div className="content has-sidebar">
+				<div className="content">
 					<p>
 						Select the size type you're interested in:
 						<Select value={this.state.selectedSize} onChange={this.changeSize} options={SIZES} />
 					</p>
 					<p>
+						Select the chunks to display:
+						<ChunkList
+							value={this.state.selectedChunks}
+							onChange={this.changeChunks}
+							options={this.state.chunks}
+						/>
+					</p>
+					<p>
 						Showing
-						<Select value={this.state.selectedPeriod} onChange={this.changePeriod} options={PERIODS}/>
+						<Select
+							value={this.state.selectedPeriod}
+							onChange={this.changePeriod}
+							options={PERIODS}
+						/>
 						in <b>master</b> (choose <Link to="/branch">another branch</Link>)
 					</p>
 					{this.state.chartData && (

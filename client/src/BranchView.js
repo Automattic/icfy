@@ -84,16 +84,9 @@ class BranchView extends React.Component {
 
 	loadBranches() {
 		getBranches().then(branches => {
-			const branchList = [
-				...branches
-					.filter(branch => branch !== 'master')
-					.map((option) => {
-						return {
-							value: option,
-							label: option,
-						};
-					}),
-			];
+			const branchList = branches
+				.filter(branch => branch !== 'master')
+				.map(option => ({ value: option, label: option }));
 			this.setState({ branchList });
 		});
 	}
@@ -131,7 +124,7 @@ class BranchView extends React.Component {
 
 	selectBranch = option => {
 		const selectedBranch = option.value || '';
-		this.props.history.push({ search: (selectedBranch ? `?branch=${selectedBranch}` : '') });
+		this.props.history.push({ search: selectedBranch ? `?branch=${selectedBranch}` : '' });
 		this.setState({
 			selectedBranch,
 			selectedBranchHead: null,
@@ -187,6 +180,7 @@ class BranchView extends React.Component {
 					<label>
 						<h4>Stats for a branch:</h4>
 						<Select
+							className="smart-select"
 							placeholder="Choose branch…"
 							loadingPlaceholder="Loading branches…"
 							resetValue=""
