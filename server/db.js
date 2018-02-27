@@ -36,14 +36,25 @@ exports.setPushAncestor = (sha, ancestorSha) =>
 
 exports.insertChunkStats = stats => K('stats').insert(stats);
 
-exports.getKnownChunks = () => {
-	const branch = 'master';
-	return K.select()
+exports.getKnownChunks = async function() {
+	// find the SHA of last processed master push
+	const lastPushArr = await K('pushes')
+		.select('sha')
+		.where({ branch: 'master', processed: true })
+		.orderBy('created_at', 'desc')
+		.limit(1);
+
+	if (lastPushArr.length === 0) {
+		throw new Error('last processed master push not found');
+	}
+
+	const lastPushSha = lastPushArr[0].sha;
+	const lastPushStats = await K.select()
 		.distinct('chunk')
 		.from('stats')
-		.join('pushes', 'stats.sha', 'pushes.sha')
-		.where({ 'pushes.branch': branch })
-		.then(res => res.map(row => row.chunk));
+		.where('sha', lastPushSha);
+
+	return lastPushStats.map(row => row.chunk);
 };
 
 exports.getChartData = (period, chunk) => {
