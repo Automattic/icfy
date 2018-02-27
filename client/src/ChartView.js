@@ -127,11 +127,13 @@ class ChartView extends React.Component {
 					{this.state.chartData && (
 						<Chart chartData={this.state.chartData} onMouseOver={this.showPush} />
 					)}
-					<PushDetails
-						sha={this.state.currentPushSha}
-						prevSha={this.state.currentPrevPushSha}
-						debounceDelay={500}
-					/>
+					{this.state.currentPushSha && (
+						<PushDetails
+							sha={this.state.currentPushSha}
+							prevSha={this.state.currentPrevPushSha}
+							debounceDelay={500}
+						/>
+					)}
 				</div>
 			</div>
 		);

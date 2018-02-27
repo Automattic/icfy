@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { getPush, getDelta } from './api';
 import Delta from './Delta';
+import CommitMessage from './CommitMessage';
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -12,23 +13,6 @@ const PushLink = ({ sha, prevSha }) => <Link to={pathJoin(`/push/${sha}`, prevSh
 const GitHubLink = ({ sha }) => (
 	<a href={`https://github.com/Automattic/wp-calypso/commit/${sha}`}>code</a>
 );
-
-const CommitMessage = ({ message }) => {
-	const children = [];
-	const re = /#(\d+)/g;
-	let i = 0,
-		match;
-	while ((match = re.exec(message))) {
-		children.push(
-			message.substr(i, match.index - i),
-			<a href={`https://github.com/Automattic/wp-calypso/pull/${match[1]}`}>{match[0]}</a>
-		);
-		i = match.index + match[0].length;
-	}
-	children.push(message.substr(i));
-
-	return <span>{children}</span>;
-};
 
 const Push = ({ push }) => (
 	<div>
@@ -58,9 +42,9 @@ class PushDetails extends React.Component {
 		this.loadPush(this.props);
 	}
 
-	componentWillReceiveProps(nextProps) {
-		if (!pushParamsEqual(this.props, nextProps)) {
-			this.loadPush(nextProps);
+	componentDidUpdate(prevProps) {
+		if (!pushParamsEqual(this.props, prevProps)) {
+			this.loadPush(this.props);
 		}
 	}
 
