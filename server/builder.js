@@ -1,7 +1,6 @@
 const { writeFileSync } = require('fs');
 const { spawn, exec } = require('child_process');
 const { join } = require('path');
-const co = require('co');
 const { readStatsFromFile, getViewerData } = require('webpack-bundle-analyzer/lib/analyzer');
 
 const { getQueuedPushes, markPushAsProcessed, setPushAncestor, insertChunkStats } = require('./db');
@@ -50,27 +49,27 @@ function cmd(cmdline, options = {}) {
 	});
 }
 
-const processPush = co.wrap(function*(push) {
+async function processPush(push) {
 	process.chdir(repoDir);
 
 	// fetch the latest revisions from GitHub
-	yield cmd('git fetch');
+	await cmd('git fetch');
 
 	// checkout the revision we want
-	yield cmd(`git checkout ${push.sha}`);
+	await cmd(`git checkout ${push.sha}`);
 
 	// determine the ancestor
 	if (push.branch !== 'master' && !push.ancestor) {
-		const ancestorSha = yield cmd('git merge-base HEAD origin/master', { returnStdout: true });
+		const ancestorSha = await cmd('git merge-base HEAD origin/master', { returnStdout: true });
 		console.log(`ancestor of ${push.branch} (${push.sha}): [${ancestorSha}]`);
-		yield setPushAncestor(push.sha, ancestorSha);
+		await setPushAncestor(push.sha, ancestorSha);
 	}
 
 	// update node_modules
-	yield cmd('npm install');
+	await cmd('npm install');
 
 	// run the build
-	yield cmd(
+	await cmd(
 		'npm run -s env -- node --max_old_space_size=8192 ./node_modules/.bin/webpack --config webpack.config.js --profile --json > stats.json',
 		{
 			useShell: true,
@@ -80,18 +79,18 @@ const processPush = co.wrap(function*(push) {
 
 	// generate the chart data
 	log('Analyzing the bundle stats');
-	yield analyzeBundle(push);
+	await analyzeBundle(push);
 
 	// remove the stat files
-	yield cmd('rm stats.json chart.json');
+	await cmd('rm stats.json chart.json');
 
 	// cleanup after the build
-	yield cmd('npm run clean');
+	await cmd('npm run clean');
 
 	process.chdir('..');
-});
+}
 
-const analyzeBundle = co.wrap(function*(push) {
+async function analyzeBundle(push) {
 	const stats = readStatsFromFile('stats.json');
 	const chart = getViewerData(stats, './public');
 	writeFileSync('chart.json', JSON.stringify(chart, null, 2));
@@ -109,24 +108,24 @@ const analyzeBundle = co.wrap(function*(push) {
 			parsed_size: asset.parsedSize,
 			gzip_size: asset.gzipSize,
 		};
-		yield insertChunkStats(newStat);
+		await insertChunkStats(newStat);
 		log(`Recorded new stat: sha=${sha} chunk=${chunk}`);
 	}
-});
+}
 
-const processQueue = co.wrap(function*() {
+async function processQueue() {
 	while (true) {
-		const pushes = yield getQueuedPushes();
+		const pushes = await getQueuedPushes();
 		for (const push of pushes) {
-			yield processPush(push);
-			yield markPushAsProcessed(push.sha);
+			await processPush(push);
+			await markPushAsProcessed(push.sha);
 		}
 
 		if (pushes.length === 0) {
 			// wait a minute before querying for pushes again
-			yield sleep(60000);
+			await sleep(60000);
 		}
 	}
-});
+}
 
 processQueue().catch(console.error);

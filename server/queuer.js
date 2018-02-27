@@ -1,4 +1,3 @@
-const co = require('co');
 const { get } = require('axios');
 const db = require('./db');
 
@@ -27,10 +26,10 @@ function toPush(response) {
 	};
 }
 
-const fetchPushEvents = co.wrap(function*(page = 1) {
+async function fetchPushEvents(page = 1) {
 	// issue the API request
 	const url = `https://api.github.com/repos/${REPO}/events` + (page > 1 ? `?page=${page}` : '');
-	const response = yield get(url);
+	const response = await get(url);
 
 	// extract the PushEvents to master
 	const pushes = response.data
@@ -40,9 +39,9 @@ const fetchPushEvents = co.wrap(function*(page = 1) {
 	log(`Retrieved ${pushes.length} pushes on page ${page}`);
 
 	return pushes;
-});
+}
 
-const findNewPushesSince = co.wrap(function*(lastPush) {
+async function findNewPushesSince(lastPush) {
 	log(`Searching for new pushes since: ${printPush(lastPush)}`);
 
 	const newPushes = [];
@@ -54,7 +53,7 @@ const findNewPushesSince = co.wrap(function*(lastPush) {
 			log(`Didn't find the last push on last 10 pages`);
 			break;
 		}
-		const pushes = yield fetchPushEvents(page++);
+		const pushes = await fetchPushEvents(page++);
 		for (const push of pushes) {
 			if (push.sha === lastPush.sha) {
 				log(`Reached last known push: ${printPush(push)}`);
@@ -68,16 +67,16 @@ const findNewPushesSince = co.wrap(function*(lastPush) {
 	}
 
 	return newPushes.reverse();
-});
+}
 
-const pollForNewPushes = co.wrap(function*() {
+async function pollForNewPushes() {
 	while (true) {
 		try {
-			const [ lastPush ] = yield db.getLastPush();
-			const newPushes = yield findNewPushesSince(lastPush);
+			const [ lastPush ] = await db.getLastPush();
+			const newPushes = await findNewPushesSince(lastPush);
 
 			for (const push of newPushes) {
-				yield db.insertPush(push);
+				await db.insertPush(push);
 				log(`Queued new push: ${printPush(push)}`);
 			}
 
@@ -86,8 +85,8 @@ const pollForNewPushes = co.wrap(function*() {
 			log('Error while checking for new pushes:', error);
 		}
 
-		yield sleep(5 * 60 * 1000);
+		await sleep(5 * 60 * 1000);
 	}
-});
+}
 
 pollForNewPushes().catch(console.error);
