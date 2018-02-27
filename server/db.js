@@ -84,3 +84,9 @@ exports.getPushDelta = async function(first, second) {
 	const [firstStats, secondStats] = await Promise.all([first, second].map(getPushStats));
 	return deltaFromStats(firstStats, secondStats);
 };
+
+exports.getPushLog = count =>
+	K('pushes')
+		.select()
+		.orderBy('id', 'desc')
+		.limit(count);

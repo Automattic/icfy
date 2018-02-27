@@ -12,13 +12,12 @@ app.use(bodyParser.json());
 
 app.get('/chunks', getChunks);
 app.get('/chart', getChart);
-app.get('/chart/:period/:chunk', getChart);
 app.get('/push', getPush);
 app.get('/push/:sha', getPush);
 app.post('/push', insertPush);
 app.get('/pushstats', getPushStats);
 app.get('/delta', getPushDelta);
-app.get('/delta/:size/:first/:second', getPushDelta);
+app.get('/pushlog', getPushLog);
 app.get('/branches', getBranches);
 app.get('/branch', getBranch);
 
@@ -94,6 +93,15 @@ function getPushDelta(req, res) {
 	db
 		.getPushDelta(first, second)
 		.then(delta => res.json({ delta }))
+		.catch(reportError(res));
+}
+
+function getPushLog(req, res) {
+	const { count = 20 } = req.query;
+
+	db
+		.getPushLog(count)
+		.then(pushlog => res.json({ pushlog }))
 		.catch(reportError(res));
 }
 
