@@ -17,16 +17,24 @@ const PERIODS = [
 ];
 
 class ChartView extends React.Component {
-	state = {
-		chunks: null,
-		selectedChunks: ['build'],
-		selectedSize: 'gzip_size',
-		selectedPeriod: 'last200',
-		data: null,
-		chartData: null,
-		currentPushSha: null,
-		currentPrevPushSha: null,
-	};
+	constructor(props) {
+		super(props);
+
+		const searchParams = new URLSearchParams(props.location.search);
+		const selectedBranch = searchParams.get('branch') || 'master';
+
+		this.state = {
+			chunks: null,
+			selectedChunks: ['build'],
+			selectedSize: 'gzip_size',
+			selectedPeriod: 'last200',
+			selectedBranch,
+			data: null,
+			chartData: null,
+			currentPushSha: null,
+			currentPrevPushSha: null,
+		};
+	}
 
 	componentDidMount() {
 		this.loadChunks();
@@ -57,10 +65,12 @@ class ChartView extends React.Component {
 	loadChart() {
 		Promise.all(
 			this.state.selectedChunks.map(chunk =>
-				getChartData(chunk, this.state.selectedPeriod).then(response => ({
-					chunk,
-					data: response.data.data,
-				}))
+				getChartData(chunk, this.state.selectedPeriod, this.state.selectedBranch).then(
+					response => ({
+						chunk,
+						data: response.data.data,
+					})
+				)
 			)
 		).then(data => this.setData(data));
 	}

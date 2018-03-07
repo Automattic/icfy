@@ -3,8 +3,8 @@ import { get, post } from 'axios';
 // const apiURL = 'http://localhost:5000';
 const apiURL = 'http://api.iscalypsofastyet.com:5000';
 
-export const getChartData = (chunk, period) =>
-	get(`${apiURL}/chart?period=${period}&chunk=${chunk}`);
+export const getChartData = (chunk, period, branch) =>
+	get(`${apiURL}/chart?period=${period}&chunk=${chunk}&branch=${branch}`);
 export const getChunkList = () => get(`${apiURL}/chunks`);
 export const getPush = sha => get(`${apiURL}/push?sha=${sha}`);
 export const insertPush = push => post(`${apiURL}/push`, push);
