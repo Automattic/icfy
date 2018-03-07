@@ -57,13 +57,12 @@ exports.getKnownChunks = async function() {
 	return lastPushStats.map(row => row.chunk);
 };
 
-exports.getChartData = (period, chunk) => {
+exports.getChartData = (period, chunk, branch = 'master') => {
 	let lastCount = 200;
 	const lastReMatch = /^last(\d+)$/.exec(period);
 	if (lastReMatch) {
 		lastCount = Number(lastReMatch[1]);
 	}
-	const branch = 'master';
 	return K.select('stats.*')
 		.from('stats')
 		.join('pushes', 'stats.sha', 'pushes.sha')

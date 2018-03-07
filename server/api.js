@@ -43,10 +43,10 @@ function getChunks(req, res) {
 }
 
 function getChart(req, res) {
-	const { period, chunk } = _.defaults(req.params, req.query);
+	const { period, chunk, branch = 'master' } = req.query;
 
 	db
-		.getChartData(period, chunk)
+		.getChartData(period, chunk, branch)
 		.then(data => res.json({ data }))
 		.catch(reportError(res));
 }
