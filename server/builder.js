@@ -73,10 +73,13 @@ async function processPush(push) {
 
 	// run the JS build in webpack analyze mode
 	await cmd(
-		'CALYPSO_CLIENT=true npm run -s env -- node --max_old_space_size=8192 ./node_modules/.bin/webpack --config webpack.config.js --profile --json > stats.json',
+		'npm run -s env -- node --max_old_space_size=8192 ./node_modules/.bin/webpack --config webpack.config.js --profile --json > stats.json',
 		{
 			useShell: true,
-			env: { NODE_ENV: 'production' },
+			env: {
+				NODE_ENV: 'production',
+				CALYPSO_CLIENT: 'true',
+			},
 		}
 	);
 
