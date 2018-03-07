@@ -76,7 +76,10 @@ async function processPush(push) {
 		'npm run -s env -- node --max_old_space_size=8192 ./node_modules/.bin/webpack --config webpack.config.js --profile --json > stats.json',
 		{
 			useShell: true,
-			env: { NODE_ENV: 'production' },
+			env: {
+				NODE_ENV: 'production',
+				CALYPSO_CLIENT: 'true',
+			},
 		}
 	);
 
