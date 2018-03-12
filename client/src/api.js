@@ -10,7 +10,7 @@ export const getPush = sha => get(`${apiURL}/push?sha=${sha}`);
 export const insertPush = push => post(`${apiURL}/push`, push);
 export const getDelta = (firstSha, secondSha) =>
 	get(`${apiURL}/delta?first=${firstSha}&second=${secondSha}`);
-export const getPushLog = () => get(`${apiURL}/pushlog`);
+export const getPushLog = count => get(`${apiURL}/pushlog` + (count ? `?count=${count}` : ''));
 
 const GH_REPO_SLUG = 'Automattic/wp-calypso';
 const GH_REPO_URL = `https://api.github.com/repos/${GH_REPO_SLUG}`;

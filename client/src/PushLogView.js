@@ -7,7 +7,10 @@ class PushLogView extends React.Component {
 	state = { pushlog: null };
 
 	componentDidMount() {
-		getPushLog().then(response => {
+		const searchParams = new URLSearchParams(this.props.location.search);
+		const count = searchParams.get('count');
+
+		getPushLog(count).then(response => {
 			const { pushlog } = response.data;
 			this.setState({ pushlog });
 		});
