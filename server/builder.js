@@ -3,18 +3,11 @@ const { spawn, exec } = require('child_process');
 const { join } = require('path');
 const { readStatsFromFile, getViewerData } = require('webpack-bundle-analyzer/lib/analyzer');
 
+const { log, sleep } = require('./utils');
 const { getQueuedPushes, markPushAsProcessed, setPushAncestor, insertChunkStats } = require('./db');
 
 const statsDir = join(process.cwd(), 'stats');
 const repoDir = join(process.cwd(), 'wp-calypso');
-
-function log(...args) {
-	console.log(...args);
-}
-
-function sleep(ms) {
-	return new Promise(r => setTimeout(r, ms));
-}
 
 function startProc(cmdline, env, useShell) {
 	if (useShell) {
