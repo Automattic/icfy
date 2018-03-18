@@ -46,7 +46,7 @@ async function processPush(push) {
 	process.chdir(repoDir);
 
 	// fetch the latest revisions from GitHub
-	await cmd('git fetch');
+	await cmd('git fetch --prune');
 
 	// checkout the revision we want
 	await cmd(`git checkout ${push.sha}`);
