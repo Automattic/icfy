@@ -44,12 +44,12 @@ function deltaFromStats(firstStats, secondStats) {
 		const secondStat = secondStats.find(s => s.chunk === chunk);
 		const secondHash = secondStat ? secondStat.hash : null;
 
-		if (firstHash !== secondHash) {
-			const firstSizes = sizesOf(firstStat);
-			const secondSizes = sizesOf(secondStat);
-			const deltaSizes = deltaSizesOf(firstSizes, secondSizes);
-			const deltaPercents = deltaPercentsOf(firstSizes, deltaSizes);
+		const firstSizes = sizesOf(firstStat);
+		const secondSizes = sizesOf(secondStat);
+		const deltaSizes = deltaSizesOf(firstSizes, secondSizes);
+		const deltaPercents = deltaPercentsOf(firstSizes, deltaSizes);
 
+		if (_.some(deltaSizes, size => size !== 0)) {
 			deltas.push({
 				chunk,
 				firstHash,
