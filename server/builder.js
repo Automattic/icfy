@@ -1,10 +1,17 @@
 const { writeFileSync } = require('fs');
 const { spawn, exec } = require('child_process');
 const { join } = require('path');
+const _ = require('lodash');
 const { readStatsFromFile, getViewerData } = require('webpack-bundle-analyzer/lib/analyzer');
 
 const { log, sleep } = require('./utils');
-const { getQueuedPushes, markPushAsProcessed, setPushAncestor, insertChunkStats } = require('./db');
+const {
+	getQueuedPushes,
+	markPushAsProcessed,
+	setPushAncestor,
+	insertChunkStats,
+	insertChunkGroups,
+} = require('./db');
 
 const statsDir = join(process.cwd(), 'stats');
 const repoDir = join(process.cwd(), 'wp-calypso');
@@ -121,6 +128,27 @@ async function analyzeBundle(push) {
 		await insertChunkStats(newStat);
 		log(`Recorded new stat: sha=${sha} chunk=${chunk}`);
 	}
+
+	const webpackMajorVersion = parseInt(stats.version, 10);
+
+	let newChunkGroups = [];
+	if (webpackMajorVersion >= 4) {
+		const newChunkGroups = _.flatMap(stats.chunks, chunk =>
+			chunk.siblings.map(sibling => ({
+				sha,
+				chunk: chunk.id,
+				sibling,
+			}))
+		);
+	} else {
+		// webpack 3 support
+		newChunkGroups = [
+			{ sha, chunk: 'build', sibling: 'manifest' },
+			{ sha, chunk: 'build', sibling: 'vendor' },
+		];
+	}
+
+	await insertChunkGroups(newChunkGroups);
 }
 
 async function processQueue() {

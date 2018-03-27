@@ -36,6 +36,8 @@ exports.setPushAncestor = (sha, ancestorSha) =>
 
 exports.insertChunkStats = stats => K('stats').insert(stats);
 
+exports.insertChunkGroups = chunkGroup => K('chunk_groups').insert(chunkGroups);
+
 exports.getKnownChunks = async function() {
 	// find the SHA of last processed master push
 	const lastPushArr = await K('pushes')
