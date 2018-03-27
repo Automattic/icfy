@@ -141,7 +141,7 @@ async function analyzeBundle(push) {
 			}))
 		);
 	} else {
-		// webpack 3 support
+		// support for webpack < 4
 		newChunkGroups = [
 			{ sha, chunk: 'build', sibling: 'manifest' },
 			{ sha, chunk: 'build', sibling: 'vendor' },
