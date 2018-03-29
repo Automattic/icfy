@@ -10,7 +10,11 @@ exports.getPush = sha =>
 		.select()
 		.where('sha', sha);
 
-exports.insertPush = push => K('pushes').insert(push);
+exports.insertPush = (push) => {
+	// Convert '2018-03-27T22:14:19Z' to '2018-03-27 22:14:19'
+	push.created_at = new Date(push.created_at).toISOString().slice(0, 19).replace('T', ' ');
+	return K('pushes').insert(push);
+};
 
 exports.getLastPush = () =>
 	K('pushes')
