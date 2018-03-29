@@ -4,7 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "concurrently node 'npm run start:queuer' 'npm run start:builder' 'npm run start:api'",
+    "start:queuer": "node ./queuer.js",
+    "start:builder": "node ./builder.js",
+    "start:api": "node ./api.js"
   },
   "author": "",
   "license": "ISC",
@@ -18,5 +22,8 @@
     "nconf": "^0.8.4",
     "text-table": "^0.2.0",
     "webpack-bundle-analyzer": "^2.11.1"
+  },
+  "devDependencies": {
+    "concurrently": "~3.5.1"
   }
 }

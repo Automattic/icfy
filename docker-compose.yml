@@ -1,0 +1,38 @@
+version: '3.3'
+
+services:
+
+  server:
+    container_name: ijfy_server
+    image: node:carbon
+    volumes:
+      - ./config:/srv/config
+      - ./server:/srv/server
+    restart: always
+    ports:
+      - 5000:5000
+    entrypoint: /srv/server/entrypoint.sh
+
+  client:
+    container_name: ijfy_client
+    image: node:carbon
+    volumes:
+      - ./client:/srv/client
+    restart: always
+    ports:
+      - 3000:3000
+    entrypoint: /srv/client/entrypoint.sh
+
+  db:
+    container_name: ijfy_mysql
+    image: mysql:5.7
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+    restart: always
+    ports:
+      - 3306:3306
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-ijfy}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-ijfy}
+      MYSQL_USER: ${MYSQL_USER:-ijfy}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-ijfy}
