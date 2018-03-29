@@ -14,7 +14,7 @@ const {
 } = require('./db');
 
 const statsDir = join(process.cwd(), 'stats');
-const repoDir = join(process.cwd(), 'wp-calypso');
+const repoDir = join(process.cwd(), 'repository');
 
 function startProc(cmdline, env, useShell) {
 	if (useShell) {

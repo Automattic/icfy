@@ -9,7 +9,7 @@ config/config.json
 /client/build
 
 # working dir
-/wp-calypso
+/server/repository
 
 # misc
 .DS_Store
