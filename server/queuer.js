@@ -17,7 +17,7 @@ function sleep(ms) {
 }
 
 function printPush(push) {
-	return `${push.sha} at ${push.created_at} by ${push.author}: ${push.message}`;
+	return push ? `${push.sha} at ${push.created_at} by ${push.author}: ${push.message}` : '—';
 }
 
 function toPush(response) {
@@ -35,6 +35,8 @@ async function fetchPushEvents(page = 1) {
 	const url = `https://api.github.com/repos/${REPO}/events` + (page > 1 ? `?page=${page}` : '');
 	const response = await get(url);
 
+	log(`Fetching push events from ${url}`);
+
 	// extract the PushEvents to master
 	const pushes = response.data
 		.filter(push => push.type === 'PushEvent' && push.payload.ref === BRANCH)
@@ -49,17 +51,18 @@ async function findNewPushesSince(lastPush) {
 	log(`Searching for new pushes since: ${printPush(lastPush)}`);
 
 	const newPushes = [];
+	const maxPages = 10; // 10 is maximum that GitHub can handle: https://developer.github.com/v3/#pagination
 	let page = 1;
 	let lastPushFound = false;
 
 	while (!lastPushFound) {
-		if (page > 10) {
-			log(`Didn't find the last push on last 10 pages`);
+		if (page > maxPages) {
+			log(`Didn't find the last push on last ${maxPages} pages`);
 			break;
 		}
 		const pushes = await fetchPushEvents(page++);
 		for (const push of pushes) {
-			if (push.sha === lastPush.sha) {
+			if (push.sha && lastPush && lastPush.sha && push.sha === lastPush.sha) {
 				log(`Reached last known push: ${printPush(push)}`);
 				lastPushFound = true;
 				break;

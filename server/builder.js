@@ -50,6 +50,7 @@ function cmd(cmdline, options = {}) {
 }
 
 async function processPush(push) {
+	log(`Entering directory: ${repoDir}`);
 	process.chdir(repoDir);
 
 	// fetch the latest revisions from GitHub
@@ -66,24 +67,26 @@ async function processPush(push) {
 	}
 
 	// update node_modules
-	await cmd('npm install');
+	await cmd('yarn install');
 
-	// build CSS -- the JS build depends on the CSS files
-	await cmd('npm run build-css');
-
-	// run the JS build in webpack analyze mode
-	await cmd('npm run preanalyze-bundles', {
+	await cmd('npx webpack --config ./webpack.config.js --profile --json > stats.json', {
 		useShell: true,
 		env: {
+			BABEL_ENV: 'production',
 			NODE_ENV: 'production',
-			NODE_PATH: 'client',
-			CALYPSO_CLIENT: 'true',
 		},
 	});
 
 	// generate the chart data
-	log('Analyzing the bundle stats');
-	await analyzeBundle(push);
+	log('Analyzing the bundle stats...');
+	try {
+		await analyzeBundle(push);
+	}
+	catch(error) {
+	  log(`Failed to analyze bundle stats:`);
+	  log(error);
+	}
+
 
 	// remove the stat files
 	await cmd('rm stats.json chart.json');
@@ -96,28 +99,34 @@ async function processPush(push) {
 }
 
 async function analyzeBundle(push) {
+	log(`Analyzing bundle`);
+
 	const stats = readStatsFromFile('stats.json');
 	const chart = getViewerData(stats, './public');
 	writeFileSync('chart.json', JSON.stringify(chart, null, 2));
+
+	let newStat = {};
 
 	for (const asset of chart) {
 		const { sha, created_at } = push;
 		const [chunk, hash] = asset.label.split('.');
 
-		const newStat = {
+		newStat = {
 			sha,
 			created_at,
 			chunk,
 			hash,
-			stat_size: asset.statSize,
-			parsed_size: asset.parsedSize,
-			gzip_size: asset.gzipSize,
+			stat_size: asset.statSize || 0,
+			parsed_size: asset.parsedSize || 0,
+			gzip_size: asset.gzipSize || 0,
 		};
 		await insertChunkStats(newStat);
 		log(`Recorded new stat: sha=${sha} chunk=${chunk}`);
 	}
 
 	const webpackMajorVersion = parseInt(stats.version, 10);
+
+	log(`Stats for Webpack v${webpackMajorVersion}`);
 
 	let newChunkGroups = [];
 	if (webpackMajorVersion >= 4) {
@@ -131,15 +140,17 @@ async function analyzeBundle(push) {
 	} else {
 		// support for webpack < 4
 		newChunkGroups = [
-			{ sha, chunk: 'build', sibling: 'manifest' },
-			{ sha, chunk: 'build', sibling: 'vendor' },
+			{ sha: newStat.sha, chunk: 'build', sibling: 'manifest' },
+			{ sha: newStat.sha, chunk: 'build', sibling: 'vendor' },
 		];
 	}
 
+	log(`Save chunk groups`);
 	await insertChunkGroups(newChunkGroups);
 }
 
 async function processQueue() {
+	log(`Processing build queue`);
 	while (true) {
 		const pushes = await getQueuedPushes();
 		for (const push of pushes) {
