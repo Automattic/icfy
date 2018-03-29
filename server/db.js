@@ -82,41 +82,65 @@ exports.getChartData = (period, chunk, branch = 'master') => {
 	return getChunkSizes(chunk, branch, lastCount).then(res => _.sortBy(res, 'created_at'));
 };
 
-exports.getChunkGroupChartData = (period, chunk, loadedChunks, branch = 'master') => {
-	const lastCount = periodToLastCount(period);
+function getLoadedChunksSiblings(shas, loadedChunks) {
+	if (_.isEmpty(loadedChunks)) {
+		return [];
+	}
 
-	const mainSizesQuery = getChunkSizes(chunk, branch, lastCount);
+	loadedChunks = _.split(loadedChunks);
+	return K.distinct(['p.sha', 'cg.sibling'])
+		.select()
+		.from('pushes as p')
+		.join('chunk_groups as cg', 'cg.sha', 'p.sha')
+		.where('p.sha', 'in', shas)
+		.andWhere('cg.chunk', 'in', loadedChunks);
+}
 
-	const groupSizesQuery = K.select(
-		K.raw(
-			_.join([
-				'p.sha',
-				'p.created_at',
-				'sum(s.stat_size) as stat_size',
-				'sum(s.parsed_size) as parsed_size',
-				'sum(s.gzip_size) as gzip_size',
-			])
-		)
-	)
+function getSiblingSizes(shas, chunk) {
+	return K.select([
+		'p.sha',
+		'p.created_at',
+		'cg.sibling',
+		's.stat_size',
+		's.parsed_size',
+		's.gzip_size',
+	])
 		.from('pushes as p')
 		.join('chunk_groups as cg', 'cg.sha', 'p.sha')
 		.join('stats as s', { 's.sha': 'cg.sha', 's.chunk': 'cg.sibling' })
-		.groupBy('p.sha')
-		.where({ 'p.branch': branch, 'cg.chunk': chunk })
-		.orderBy('p.created_at', 'desc')
-		.limit(lastCount);
+		.whereIn('p.sha', shas)
+		.andWhere('cg.chunk', chunk);
+}
 
-	return Promise.all([mainSizesQuery, groupSizesQuery]).then(([mainSizes, groupSizes]) => {
-		for (const mainSize of mainSizes) {
-			groupSize = _.find(groupSizes, { sha: mainSize.sha });
-			if (groupSize) {
-				for (const size of ['stat_size', 'parsed_size', 'gzip_size']) {
-					mainSize[size] += groupSize[size];
-				}
+exports.getChunkGroupChartData = async (period, chunk, loadedChunks, branch = 'master') => {
+	const lastCount = periodToLastCount(period);
+
+	const mainSizes = await getChunkSizes(chunk, branch, lastCount);
+	const mainSizesShas = _.map(mainSizes, 'sha');
+
+	const [loadedChunksSiblings, siblingSizes] = await Promise.all([
+		getLoadedChunksSiblings(mainSizesShas, loadedChunks),
+		getSiblingSizes(mainSizesShas, chunk),
+	]);
+
+	for (const mainSize of mainSizes) {
+		const loadedChunkSiblingsForPush = _.map(
+			_.filter(loadedChunksSiblings, { sha: mainSize.sha }),
+			'sibling'
+		);
+		const siblingSizesForPush = _.filter(
+			siblingSizes,
+			s => s.sha === mainSize.sha && !_.includes(loadedChunkSiblingsForPush, s.sibling)
+		);
+
+		for (const siblingSize of siblingSizesForPush) {
+			for (const size of ['stat_size', 'parsed_size', 'gzip_size']) {
+				mainSize[size] += siblingSize[size];
 			}
 		}
-		return _.sortBy(mainSizes, 'created_at');
-	});
+	}
+
+	return _.sortBy(mainSizes, 'created_at');
 };
 
 const getPushStats = sha =>
