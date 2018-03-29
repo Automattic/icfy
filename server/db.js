@@ -59,19 +59,64 @@ exports.getKnownChunks = async function() {
 	return lastPushStats.map(row => row.chunk);
 };
 
-exports.getChartData = (period, chunk, branch = 'master') => {
+function periodToLastCount(period) {
 	let lastCount = 200;
 	const lastReMatch = /^last(\d+)$/.exec(period);
 	if (lastReMatch) {
 		lastCount = Number(lastReMatch[1]);
 	}
-	return K.select('stats.*')
-		.from('stats')
-		.join('pushes', 'stats.sha', 'pushes.sha')
-		.where({ 'pushes.branch': branch, 'stats.chunk': chunk })
-		.orderBy('created_at', 'desc')
-		.limit(lastCount)
-		.then(res => _.sortBy(res, 'created_at'));
+	return lastCount;
+}
+
+function getChunkSizes(chunk, branch, lastCount) {
+	return K.select(['p.sha', 'p.created_at', 's.stat_size', 's.parsed_size', 's.gzip_size'])
+		.from('pushes as p')
+		.join('stats as s', 'p.sha', 's.sha')
+		.where({ 'p.branch': branch, 's.chunk': chunk })
+		.orderBy('p.created_at', 'desc')
+		.limit(lastCount);
+}
+
+exports.getChartData = (period, chunk, branch = 'master') => {
+	const lastCount = periodToLastCount(period);
+	return getChunkSizes(chunk, branch, lastCount).then(res => _.sortBy(res, 'created_at'));
+};
+
+exports.getChunkGroupChartData = (period, chunk, loadedChunks, branch = 'master') => {
+	const lastCount = periodToLastCount(period);
+
+	const mainSizesQuery = getChunkSizes(chunk, branch, lastCount);
+
+	const groupSizesQuery = K.select(
+		K.raw(
+			_.join([
+				'p.sha',
+				'p.created_at',
+				'sum(s.stat_size) as stat_size',
+				'sum(s.parsed_size) as parsed_size',
+				'sum(s.gzip_size) as gzip_size',
+			])
+		)
+	)
+		.from('pushes as p')
+		.join('chunk_groups as cg', 'cg.sha', 'p.sha')
+		.join('stats as s', { 's.sha': 'cg.sha', 's.chunk': 'cg.sibling' })
+		.groupBy('p.sha')
+		.where({ 'p.branch': branch, 'cg.chunk': chunk })
+		.orderBy('p.created_at', 'desc')
+		.limit(lastCount);
+
+	return Promise.all([mainSizesQuery, groupSizesQuery]).then(([mainSizes, groupSizes]) => {
+		for (const mainSize of mainSizes) {
+			groupSize = _.find(groupSizes, { sha: mainSize.sha });
+			if (groupSize) {
+				for (const size of ['stat_size', 'parsed_size', 'gzip_size']) {
+					mainSize[size] += groupSize[size];
+				}
+			}
+		}
+		return _.sortBy(mainSizes, 'created_at');
+	});
 };
 
 const getPushStats = sha =>

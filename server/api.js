@@ -12,6 +12,7 @@ app.use(bodyParser.json());
 
 app.get('/chunks', getChunks);
 app.get('/chart', getChart);
+app.get('/groupchart', getChunkGroupChart);
 app.get('/push', getPush);
 app.get('/push/:sha', getPush);
 app.post('/push', insertPush);
@@ -43,10 +44,19 @@ function getChunks(req, res) {
 }
 
 function getChart(req, res) {
-	const { period, chunk, branch = 'master' } = req.query;
+	const { period, chunk, branch } = req.query;
 
 	db
 		.getChartData(period, chunk, branch)
+		.then(data => res.json({ data }))
+		.catch(reportError(res));
+}
+
+function getChunkGroupChart(req, res) {
+	const { period, chunk, loadedChunks, branch } = req.query;
+
+	db
+		.getChunkGroupChartData(period, chunk, loadedChunks, branch)
 		.then(data => res.json({ data }))
 		.catch(reportError(res));
 }
