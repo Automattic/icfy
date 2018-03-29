@@ -1,4 +1,5 @@
 import React from 'react';
+import * as config from './config.json';
 
 const CommitMessage = ({ message }) => {
 	const children = [];
@@ -8,7 +9,7 @@ const CommitMessage = ({ message }) => {
 	while ((match = re.exec(message))) {
 		children.push(
 			message.substr(i, match.index - i),
-			<a href={`https://github.com/Automattic/wp-calypso/pull/${match[1]}`}>{match[0]}</a>
+			<a href={`https://github.com/${config.repository}/pull/${match[1]}`}>{match[0]}</a>
 		);
 		i = match.index + match[0].length;
 	}

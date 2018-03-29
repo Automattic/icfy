@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { getPush, getDelta } from './api';
 import Delta from './Delta';
 import CommitMessage from './CommitMessage';
+import * as config from './config.json';
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -11,7 +12,7 @@ const pathJoin = (...parts) =>
 
 const PushLink = ({ sha, prevSha }) => <Link to={pathJoin(`/push/${sha}`, prevSha)}>{sha}</Link>;
 const GitHubLink = ({ sha }) => (
-	<a href={`https://github.com/Automattic/wp-calypso/commit/${sha}`}>code</a>
+	<a href={`https://github.com/${config.repository}/commit/${sha}`}>code</a>
 );
 
 const Push = ({ push }) => (

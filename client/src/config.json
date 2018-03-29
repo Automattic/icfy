@@ -1,3 +1,5 @@
 {
+  "repository": "Automattic/jetpack",
+  "apiURL": "http://localhost:5000",
   "title": "Is Jetpack fast yet?"
 }
