@@ -12,7 +12,7 @@ exports.getPush = sha =>
 
 exports.insertPush = (push) => {
 	// Convert '2018-03-27T22:14:19Z' to '2018-03-27 22:14:19'
-	push.created_at = new Date(push.created_at).toISOString().slice(0, 19).replace('T', ' ');
+	push.created_at = new Date(push.created_at);
 	return K('pushes').insert(push);
 };
 
