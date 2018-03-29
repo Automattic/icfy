@@ -1,0 +1,10 @@
+{
+  "db": {
+    "host": "db",
+    "port": "3306",
+    "user": "ijfy",
+    "password": "ijfy",
+    "database": "ijfy"
+  },
+  "repository": "Automattic/jetpack"
+}

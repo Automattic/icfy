@@ -1,7 +1,11 @@
 const { get } = require('axios');
 const db = require('./db');
+const nconf = require('nconf');
+const path = require('path');
 
-const REPO = 'Automattic/wp-calypso';
+nconf.env().file({ file: path.join(__dirname, '../config/config.json') });
+
+const REPO = nconf.get('repository');
 const BRANCH = 'refs/heads/master';
 
 function log(...args) {
