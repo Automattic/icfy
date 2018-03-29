@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import * as config from './config.json';
 
 const GitHubButton = () => (
 	<span className="button">
@@ -15,7 +16,7 @@ const GitHubButton = () => (
 
 const Masterbar = () => (
 	<div className="masterbar">
-		<Link className="title" to="/">Is Calypso fast yet?</Link>
+		<Link className="title" to="/">{ config.title }</Link>
 		<span className="tagline">Tracking Webpack bundle sizes since 2017</span>
 		<GitHubButton />
 	</div>
