@@ -53,10 +53,10 @@ function getChart(req, res) {
 }
 
 function getChunkGroupChart(req, res) {
-	const { period, chunk, loadedChunks, branch } = req.query;
+	const { period, chunks, loadedChunks, branch } = req.query;
 
 	db
-		.getChunkGroupChartData(period, chunk, loadedChunks, branch)
+		.getChunkGroupChartData(period, chunks, loadedChunks, branch)
 		.then(data => res.json({ data }))
 		.catch(reportError(res));
 }

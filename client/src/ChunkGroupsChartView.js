@@ -1,11 +1,11 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 
-import { getChartData, getChunkList } from './api';
+import { getChunkGroupChartData, getChunkList, getBranches } from './api';
 import Masterbar from './Masterbar';
 import Chart from './Chart';
 import PushDetails from './PushDetails';
 import Select from './Select';
+import ReactSelect from 'react-select';
 import ChunkList from './ChunkList';
 import * as _ from 'lodash';
 
@@ -27,10 +27,11 @@ class ChunkGroupsChartView extends React.Component {
 		this.state = {
 			chunks: null,
 			givenChunkGroups: [],
-			toLoadChunkGroups: ['build', 'vendor', 'reader'],
+			toLoadChunkGroups: ['build', 'reader'],
 			selectedSize: 'gzip_size',
 			selectedPeriod: 'last200',
 			selectedBranch,
+			branchList: null,
 			data: null,
 			chartData: null,
 			currentPushSha: null,
@@ -40,6 +41,7 @@ class ChunkGroupsChartView extends React.Component {
 
 	componentDidMount() {
 		this.loadChunks();
+		this.loadBranches();
 		this.loadChart();
 	}
 
@@ -56,6 +58,16 @@ class ChunkGroupsChartView extends React.Component {
 		});
 	};
 
+	loadBranches() {
+		getBranches().then(branchList => this.setState({ branchList }));
+	}
+
+	selectBranch = option => {
+		const selectedBranch = option.value || '';
+		this.props.history.push({ search: selectedBranch ? `?branch=${selectedBranch}` : '' });
+		this.setState({ selectedBranch, chartData: null, currentPushSha: null }, this.loadChart);
+	};
+
 	loadChunks() {
 		getChunkList().then(response => {
 			const { chunks } = response.data;
@@ -64,17 +76,20 @@ class ChunkGroupsChartView extends React.Component {
 	}
 
 	loadChart() {
-		const chunks = this.state.toLoadChunkGroups;
-		Promise.all(
-			chunks.map(chunk =>
-				getChartData(chunk, this.state.selectedPeriod, this.state.selectedBranch).then(response => {
-					return {
-						chunk,
-						data: response.data.data,
-					};
-				})
-			)
-		).then(data => this.setData(data));
+		const { toLoadChunkGroups, givenChunkGroups, selectedPeriod, selectedBranch } = this.state;
+		getChunkGroupChartData(toLoadChunkGroups, givenChunkGroups, selectedPeriod, selectedBranch)
+			.then(response => {
+				let xAxis = `sum( ${toLoadChunkGroups.join(', ')} )`;
+				if (givenChunkGroups.length > 0) {
+					xAxis += ` - sum( ${givenChunkGroups.join(', ')} )`;
+				}
+
+				return {
+					chunk: xAxis,
+					data: response.data.data,
+				};
+			})
+			.then(data => this.setData(data));
 	}
 
 	setGivenChunkGroups = givenChunkGroups => {
@@ -83,7 +98,7 @@ class ChunkGroupsChartView extends React.Component {
 
 	setToLoadChunkGroups = toLoadChunkGroups => {
 		if (toLoadChunkGroups.length === 0) {
-			toLoadChunkGroups = ['reader'];
+			toLoadChunkGroups = ['build', 'reader'];
 		}
 		this.setState({ toLoadChunkGroups }, () => this.loadChart());
 	};
@@ -105,49 +120,63 @@ class ChunkGroupsChartView extends React.Component {
 
 	setData(data) {
 		const { selectedSize } = this.state;
-		const chunksSummed = sumChunks(data);
-		const chartData = [[chunksSummed[0].chunk, ...chunksSummed.map(d => d[selectedSize])]];
-		this.setState({ data, chartData });
+		let chartData = null;
+		if (data && data.data.length > 0) {
+			chartData = [data.chunk, ...data.data.map(d => d[selectedSize])];
+		}
+		this.setState({ data: [data], chartData: [chartData] });
 	}
 
 	render() {
 		const toLoadOptions = _.without(this.state.chunks, ...this.state.givenChunkGroups);
+		const { selectedBranch, branchList } = this.state;
+
 		return (
 			<div className="layout">
 				<Masterbar />
 				<div className="content">
-					<p>
+					<div style={{ paddingBottom: 10 }}>
 						Select the size type you're interested in:
 						<Select value={this.state.selectedSize} onChange={this.changeSize} options={SIZES} />
-					</p>
-					<p>
+					</div>
+					<div style={{ paddingBottom: 10 }}>
 						Given these already-loaded chunk groups:
 						<ChunkList
 							value={this.state.givenChunkGroups}
 							onChange={this.setGivenChunkGroups}
 							options={this.state.chunks}
 						/>
-					</p>
-					<p>
-						How much JS does it take to load these chunk groups:
+					</div>
+					<div style={{ paddingBottom: 10 }}>
+						It takes how much JS to load these chunks groups:
 						<ChunkList
 							value={this.state.toLoadChunkGroups}
 							onChange={this.setToLoadChunkGroups}
 							options={toLoadOptions}
 						/>
-					</p>
-					<p>
+					</div>
+					<div>
 						Showing
 						<Select
 							value={this.state.selectedPeriod}
 							onChange={this.changePeriod}
 							options={PERIODS}
 						/>
-						in <b>master</b> (choose <Link to="/branch">another branch</Link>)
-					</p>
-					{this.state.chartData && (
-						<Chart chartData={this.state.chartData} onMouseOver={this.showPush} />
-					)}
+						in
+						<ReactSelect
+							className="smart-select"
+							loadingPlaceholder="Loading branches…"
+							resetValue=""
+							isLoading={!branchList}
+							value={selectedBranch}
+							onChange={this.selectBranch}
+							options={branchList && branchList.map(option => ({ value: option, label: option }))}
+						/>
+					</div>
+					{this.state.chartData &&
+						this.state.chartData[0] && (
+							<Chart chartData={this.state.chartData} onMouseOver={this.showPush} />
+						)}
 					{this.state.currentPushSha && (
 						<PushDetails
 							sha={this.state.currentPushSha}
@@ -161,22 +190,20 @@ class ChunkGroupsChartView extends React.Component {
 	}
 }
 
-function sumChunks(chunks) {
-	const chunksData = chunks.map(chunk => chunk.data);
-	const chartData = _.zip(...chunksData).map(zippedChunksData => {
-		const chunk = `sum( ${_.map(zippedChunksData, 'chunk').join(', ')} )`;
-		const stat_size = _.sumBy(zippedChunksData, data => data.stat_size);
-		const parsed_size = _.sumBy(zippedChunksData, data => data.parsed_size);
-		const gzip_size = _.sumBy(zippedChunksData, data => data.gzip_size);
-		const sha = zippedChunksData[0].sha;
+// TODO: moving the sum to the server
 
-		return { chunk, stat_size, parsed_size, gzip_size, sha };
-	});
-	return chartData;
-}
+// function sumChunks(chunks, chunkNames) {
+// 	const chunksData = chunks.map(chunk => chunk.data);
+// 	const chartData = _.zip(...chunksData).map(zippedChunksData => {
+// 		const chunk = `sum( ${chunkNames.join(', ')} )`;
+// 		const stat_size = _.sumBy(zippedChunksData, data => data.stat_size);
+// 		const parsed_size = _.sumBy(zippedChunksData, data => data.parsed_size);
+// 		const gzip_size = _.sumBy(zippedChunksData, data => data.gzip_size);
+// 		const sha = zippedChunksData[0].sha;
 
-// function sumChunkGroups(givenChunkGroups, toLoadChunkGroups, chunksByName) {
-// 	const givenChunks = givenChunkGroups;
+// 		return { chunk, stat_size, parsed_size, gzip_size, sha };
+// 	});
+// 	return chartData;
 // }
 
 export default ChunkGroupsChartView;
