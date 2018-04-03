@@ -116,7 +116,8 @@ exports.getChunkGroupChartData = async (period, chunks, loadedChunks, branch = '
 	loadedChunks = _.split(loadedChunks, ',');
 
 	const lastCount = periodToLastCount(period);
-	const timeStart = Date.now();
+
+	// annotate each chunk so that it is its own sibling
 	const chunksSizes = _.flatMap(
 		await Promise.all(
 			chunks.map(c => {
