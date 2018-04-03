@@ -117,7 +117,7 @@ function getSiblingWithSizes(shas, chunk) {
  * on a sha by sha basis.
  * 
  * The steps are then:
- * 1. process chunks and exluded chunks (loadedChunks) into two arrays of type Array<ChunkName>
+ * 1. process chunks and excluded chunks (loadedChunks) into two arrays of type Array<ChunkName>
  * 2. collect chunksToInclude: of the `chunks` sizes, and all of their siblings sizes on per commit basis.
  * 3. collect chunksToExclude: all of the `loadedChunks`, and all of their siblings on a per commit basis. Note that we do not need sizes since we don't actually subtract, 
  *      we just decide not to add them.
@@ -141,7 +141,7 @@ exports.getChunkGroupChartData = async (period, chunks, loadedChunks, branch = '
 	* siblings per sha.
 	*
 	* If chunks are always their own siblings we can skip this step 
-	* and just get the past 200 shas.
+	* and just get the past N shas.
 	*/
 	const chunksSizes = _.flatMap(
 		await Promise.all(chunks.map(c => getChunkSizes(c, branch, lastCount)))
