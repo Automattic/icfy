@@ -1,7 +1,7 @@
 import { get, post } from 'axios';
 
-// const apiURL = 'http://localhost:5000';
-const apiURL = 'http://api.iscalypsofastyet.com:5000';
+const apiURL = 'http://localhost:5000';
+// const apiURL = 'http://api.iscalypsofastyet.com:5000';
 
 export const getChartData = (chunk, period, branch) =>
 	get(`${apiURL}/chart?period=${period}&chunk=${chunk}&branch=${branch}`);

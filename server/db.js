@@ -111,42 +111,66 @@ function getSiblingWithSizes(shas, chunk) {
 		.andWhere('cg.chunk', chunk);
 }
 
+/*
+ * This function has a few parts.  The total result is is the summation of:
+ * sum( _.difference( ( explicitly called out chunks and their siblings ),  ( explicitly excluded chunks and their siblings) ) )
+ * on a sha by sha basis.
+ * 
+ * The steps are then:
+ * 1. process chunks and exluded chunks (loadedChunks) into two arrays of type Array<ChunkName>
+ * 2. collect chunksToInclude: of the `chunks` sizes, and all of their siblings sizes on per commit basis.
+ * 3. collect chunksToExclude: all of the `loadedChunks`, and all of their siblings on a per commit basis. Note that we do not need sizes since we don't actually subtract, 
+ *      we just decide not to add them.
+ * 4. sum the chunks on a sha by sha basis
+ */
 exports.getChunkGroupChartData = async (period, chunks, loadedChunks, branch = 'master') => {
-	chunks = _.split(chunks, ',');
-	loadedChunks = _.split(loadedChunks, ',');
-
 	const lastCount = periodToLastCount(period);
 
-	// annotate each chunk so that it is its own sibling
-	const chunksSizes = _.flatMap(
-		await Promise.all(
-			chunks.map(c => {
-				return getChunkSizes(c, branch, lastCount).then(sizes =>
-					sizes.map(size => ({
-						sibling: c,
-						...size,
-					}))
-				);
-			})
-		)
-	);
+	loadedChunks = loadedChunks === '' ? [] : _.uniq(_.split(loadedChunks, ','));
+	chunks = chunks === '' ? [] : _.uniq(_.split(chunks, ','));
 
-	const shas = _.uniq(_.map(chunksSizes, 'sha'));
+	// skip chunks that are found in both  loadedChunks and chunks.
+	// only keep it in loadedChunks in case it has shared sibling chunks with other things to load
+	// lets us skip work that sums to 0
+	const commonChunks = _.intersection(loadedChunks, chunks);
+	chunks = _.without(chunks, ...commonChunks);
+
+	/*
+	* Accumulate a flat list of all of the chunks explicitly called out to load (per sha)
+	* We can't sum this for the totals just yet because need to also get all of the the chunks' 
+	* siblings per sha.
+	*
+	* If chunks are always their own siblings we can skip this step 
+	* and just get the past 200 shas.
+	*/
+	const chunksSizes = _.flatMap(
+		await Promise.all(chunks.map(c => getChunkSizes(c, branch, lastCount)))
+	);
+	const shas = _.uniq(_.map(chunksSizes, 'sha')); // array of the last ${period} git shas
+
 	const siblingSizes = _.flatMap(
 		await Promise.all(chunks.map(chunk => getSiblingWithSizes(shas, chunk)))
 	);
+	const toIncludeChunks = _.uniqWith(siblingSizes, _.isEqual);
 
-	const toLoadSizes = _.uniqWith(chunksSizes.concat(siblingSizes), _.isEqual);
 	const explicitlyExcludedChunks = _.flatMap(loadedChunks, chunk =>
 		shas.map(sha => ({ sha, sibling: chunk }))
 	);
-	const toExcludeChunks = explicitlyExcludedChunks.concat(await getSiblings(shas, loadedChunks));
+
+	const toExcludeChunks = _.uniqWith(
+		explicitlyExcludedChunks.concat(await getSiblings(shas, loadedChunks)),
+		_.isEqual
+	);
+
+	const chunksToIncludeByPush = _.groupBy(toIncludeChunks, 'sha');
+	const chunksToExcludeByPush = _.mapValues(_.groupBy(toExcludeChunks, 'sha'), chunk =>
+		_.map(chunk, 'sibling')
+	);
 
 	const summedChunks = shas.map(sha => {
-		const chunksToExcludeForPush = toExcludeChunks.filter(c => c.sha === sha).map(c => c.sibling);
-		const chunksToIncludeForPush = toLoadSizes
-			.filter(c => c.sha === sha)
-			.filter(c => !chunksToExcludeForPush.includes(c.sibling));
+		const chunksToIncludeForPush = _.reject(chunksToIncludeByPush[sha], c =>
+			_.includes(chunksToExcludeByPush[sha], c.sibling)
+		);
 
 		return {
 			sha,
