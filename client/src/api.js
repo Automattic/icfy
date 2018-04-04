@@ -5,6 +5,12 @@ const apiURL = 'http://api.iscalypsofastyet.com:5000';
 
 export const getChartData = (chunk, period, branch) =>
 	get(`${apiURL}/chart?period=${period}&chunk=${chunk}&branch=${branch}`);
+export const getChunkGroupChartData = (chunks, loadedChunks, period, branch) =>
+	get(
+		`${apiURL}/groupchart?period=${period}&chunks=${chunks}${
+			loadedChunks ? '&loadedChunks=' + loadedChunks.join(',') : ''
+		}&branch=${branch}`
+	);
 export const getChunkList = () => get(`${apiURL}/chunks`);
 export const getPush = sha => get(`${apiURL}/push?sha=${sha}`);
 export const insertPush = push => post(`${apiURL}/push`, push);
