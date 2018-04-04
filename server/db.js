@@ -68,92 +68,124 @@ function periodToLastCount(period) {
 	return lastCount;
 }
 
-function getChunkSizes(chunk, branch, lastCount) {
+exports.getChartData = (period, chunk, branch = 'master') => {
+	const lastCount = periodToLastCount(period);
 	return K.select(['p.sha', 'p.created_at', 's.stat_size', 's.parsed_size', 's.gzip_size'])
 		.from('pushes as p')
 		.join('stats as s', 'p.sha', 's.sha')
 		.where({ 'p.branch': branch, 's.chunk': chunk })
 		.orderBy('p.created_at', 'desc')
+		.limit(lastCount)
+		.then(res => _.sortBy(res, 'created_at'));
+};
+
+function getPushShas(branch, lastCount) {
+	return K('pushes')
+		.select(['sha', 'created_at'])
+		.where({ branch, processed: true })
+		.orderBy('created_at', 'desc')
 		.limit(lastCount);
 }
 
-exports.getChartData = (period, chunk, branch = 'master') => {
-	const lastCount = periodToLastCount(period);
-	return getChunkSizes(chunk, branch, lastCount).then(res => _.sortBy(res, 'created_at'));
-};
+function getChunkSizes(shas, chunks) {
+	return K('stats')
+		.select(['sha', 'chunk', 'stat_size', 'parsed_size', 'gzip_size'])
+		.where('sha', 'in', shas)
+		.andWhere('chunk', 'in', chunks);
+}
 
 function getSiblings(shas, chunks) {
 	if (_.isEmpty(chunks)) {
 		return [];
 	}
 
-	return K.distinct(['p.sha', 'cg.sibling'])
+	return K.distinct(['sha', 'sibling'])
 		.select()
-		.from('pushes as p')
-		.join('chunk_groups as cg', 'cg.sha', 'p.sha')
-		.where('p.sha', 'in', shas)
-		.andWhere('cg.chunk', 'in', chunks);
+		.from('chunk_groups')
+		.where('sha', 'in', shas)
+		.andWhere('chunk', 'in', chunks);
 }
 
-function getSiblingWithSizes(shas, chunk) {
-	return K.select([
-		'p.sha',
-		'p.created_at',
-		'cg.sibling',
-		's.stat_size',
-		's.parsed_size',
-		's.gzip_size',
-	])
-		.from('pushes as p')
-		.join('chunk_groups as cg', 'cg.sha', 'p.sha')
-		.join('stats as s', { 's.sha': 'cg.sha', 's.chunk': 'cg.sibling' })
-		.whereIn('p.sha', shas)
-		.andWhere('cg.chunk', chunk);
+function getSiblingsWithSizes(shas, chunks) {
+	return K.select(['s.sha', 'cg.sibling', 's.stat_size', 's.parsed_size', 's.gzip_size'])
+		.from('chunk_groups as cg')
+		.join('stats as s', { 'cg.sha': 's.sha', 'cg.sibling': 's.chunk' })
+		.where('cg.sha', 'in', shas)
+		.andWhere('cg.chunk', 'in', chunks)
+		.groupBy('sha', 'sibling');
 }
 
+/*
+ * This function has a few parts.  The total result is is the summation of:
+ * sum( _.difference( ( explicitly called out chunks and their siblings ),  ( explicitly excluded chunks and their siblings) ) )
+ * on a sha by sha basis.
+ *
+ * The steps are then:
+ * 1. process chunks and excluded chunks (loadedChunks) into two arrays of type Array<ChunkName>
+ * 2. collect chunksToInclude: of the `chunks` sizes, and all of their siblings sizes on per commit basis.
+ * 3. collect chunksToExclude: all of the `loadedChunks`, and all of their siblings on a per commit basis. Note that we do not need sizes since we don't actually subtract,
+ *      we just decide not to add them.
+ * 4. sum the chunks on a sha by sha basis
+ */
 exports.getChunkGroupChartData = async (period, chunks, loadedChunks, branch = 'master') => {
-	chunks = _.split(chunks, ',');
-	loadedChunks = _.split(loadedChunks, ',');
-
 	const lastCount = periodToLastCount(period);
 
-	// annotate each chunk so that it is its own sibling
-	const chunksSizes = _.flatMap(
-		await Promise.all(
-			chunks.map(c => {
-				return getChunkSizes(c, branch, lastCount).then(sizes =>
-					sizes.map(size => ({
-						sibling: c,
-						...size,
-					}))
-				);
-			})
-		)
-	);
+	loadedChunks = loadedChunks ? _.uniq(_.split(loadedChunks, ',')) : [];
+	chunks = chunks ? _.uniq(_.split(chunks, ',')) : [];
 
-	const shas = _.uniq(_.map(chunksSizes, 'sha'));
-	const siblingSizes = _.flatMap(
-		await Promise.all(chunks.map(chunk => getSiblingWithSizes(shas, chunk)))
-	);
+	// Retrieve the list of shas (and their created_at timestamps) we will collect size stats for
+	const pushes = await getPushShas(branch, lastCount);
+	const shas = _.map(pushes, 'sha');
 
-	const toLoadSizes = _.uniqWith(chunksSizes.concat(siblingSizes), _.isEqual);
-	const explicitlyExcludedChunks = _.flatMap(loadedChunks, chunk =>
-		shas.map(sha => ({ sha, sibling: chunk }))
-	);
-	const toExcludeChunks = explicitlyExcludedChunks.concat(await getSiblings(shas, loadedChunks));
+	/*
+	* Accumulate a flat list of all of the chunks explicitly called out to load (per sha)
+	* We can't sum this for the totals just yet because need to also get all of the the chunks'
+	* siblings per sha.
+	*
+	* If chunks are always their own siblings we can skip this step
+	* and just get the past N shas.
+	*/
 
-	const summedChunks = shas.map(sha => {
-		const chunksToExcludeForPush = toExcludeChunks.filter(c => c.sha === sha).map(c => c.sibling);
-		const chunksToIncludeForPush = toLoadSizes
-			.filter(c => c.sha === sha)
-			.filter(c => !chunksToExcludeForPush.includes(c.sibling));
+	// Sizes of the requested chunks themselves
+	const chunkSizes = await getChunkSizes(shas, chunks);
+	// Sizes of the requested chunks' siblings
+	const toIncludeSiblings = await getSiblingsWithSizes(shas, chunks);
+	// Names of the excluded siblings (siblings of loadedChunks)
+	const toExcludeSiblings = await getSiblings(shas, loadedChunks);
+
+	// Group'em all by SHA
+	const chunksToIncludeByPush = _.groupBy(chunkSizes, 'sha');
+	const siblingsToIncludeByPush = _.groupBy(toIncludeSiblings, 'sha');
+	const siblingsToExcludeByPush = _.groupBy(toExcludeSiblings, 'sha');
+
+	const summedChunks = pushes.map(({ sha, created_at }) => {
+		const chunksToInclude = chunksToIncludeByPush[sha];
+		const siblingsToInclude = siblingsToIncludeByPush[sha];
+		const siblingsToExclude = siblingsToExcludeByPush[sha];
+
+		// requested chunks: filter out the ones in the exclusion list
+		const chunksToSum = _.reject(
+			chunksToInclude,
+			c => _.includes(loadedChunks, c.chunk) || _.find(siblingsToExclude, { sibling: c.chunk })
+		);
+
+		// requested chunks' siblings: filter out the root chunks and the exclusion list
+		const siblingsToSum = _.reject(
+			siblingsToInclude,
+			c =>
+				_.includes(loadedChunks, c.sibling) ||
+				_.find(chunksToInclude, { chunk: c.sibling }) ||
+				_.find(siblingsToExclude, { sibling: c.sibling })
+		);
+
+		const allToSum = _.concat(chunksToSum, siblingsToSum);
 
 		return {
 			sha,
-			created_at: chunksToIncludeForPush[0].created_at,
-			stat_size: _.sumBy(chunksToIncludeForPush, 'stat_size'),
-			parsed_size: _.sumBy(chunksToIncludeForPush, 'parsed_size'),
-			gzip_size: _.sumBy(chunksToIncludeForPush, 'gzip_size'),
+			created_at,
+			stat_size: _.sumBy(allToSum, 'stat_size'),
+			parsed_size: _.sumBy(allToSum, 'parsed_size'),
+			gzip_size: _.sumBy(allToSum, 'gzip_size'),
 		};
 	});
 
