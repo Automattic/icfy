@@ -12,6 +12,9 @@ const groupStats = _.mapValues(_.groupBy(chunkGroups, 'chunk'), siblings =>
 	_.map(siblings, 'sibling')
 );
 
-_.forEach(groupStats, (siblings, chunk) =>
-	console.log(`${getName(chunk)}: ${_.join(_.map(siblings, getName))}`)
-);
+_.forEach(groupStats, (siblings, chunk) => {
+	console.log(getName(chunk));
+	for (const sibling of siblings) {
+		console.log(`  ${getName(sibling)}`);
+	}
+});
