@@ -209,3 +209,10 @@ exports.getPushLog = count =>
 		.select()
 		.orderBy('id', 'desc')
 		.limit(count);
+
+exports.removePush = sha =>
+	K('pushes')
+		.delete()
+		.where('sha', sha)
+		.andWhereNot('branch', 'master')
+		.andWhere('processed', false);

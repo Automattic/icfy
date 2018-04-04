@@ -19,6 +19,7 @@ app.post('/push', insertPush);
 app.get('/pushstats', getPushStats);
 app.get('/delta', getPushDelta);
 app.get('/pushlog', getPushLog);
+app.post('/removepush', removePush);
 app.get('/branches', getBranches);
 app.get('/branch', getBranch);
 
@@ -112,6 +113,15 @@ function getPushLog(req, res) {
 	db
 		.getPushLog(count)
 		.then(pushlog => res.json({ pushlog }))
+		.catch(reportError(res));
+}
+
+function removePush(req, res) {
+	const { sha } = req.query;
+
+	db
+		.removePush(sha)
+		.then(() => res.json({}))
 		.catch(reportError(res));
 }
 
