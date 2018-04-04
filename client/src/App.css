@@ -14,14 +14,18 @@
 	z-index: 1;
 }
 
+.masterbar a {
+	color: inherit;
+	text-decoration: none;
+	margin-right: 1em;
+}
+
 .content {
 	margin-top: 46px;
 	padding: 12px;
 }
 
 .title {
-	color: inherit;
-	text-decoration: none;
 	font-size: 16px;
 }
 
