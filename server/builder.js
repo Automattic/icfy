@@ -49,7 +49,7 @@ async function processPush(push) {
 
 	// generate the chart data
 	log('Analyzing the bundle stats');
-	await analyzeBundle(push);
+	const bundleStats = analyzeBundle(push);
 
 	// remove the stat files
 	await cmd('rm stats.json chart.json');
@@ -59,19 +59,21 @@ async function processPush(push) {
 	await cmd('npm run distclean');
 
 	process.chdir('..');
+
+	return bundleStats;
 }
 
-async function analyzeBundle(push) {
+function analyzeBundle(push) {
 	const stats = readStatsFromFile('stats.json');
 	const chart = getViewerData(stats, './public');
 	writeFileSync('chart.json', JSON.stringify(chart, null, 2));
 
 	const { sha, created_at } = push;
 
-	for (const asset of chart) {
+	const chunkStats = chart.map(asset => {
 		const [chunk, hash] = asset.label.split('.');
 
-		const newStat = {
+		return {
 			sha,
 			created_at,
 			chunk,
@@ -80,15 +82,13 @@ async function analyzeBundle(push) {
 			parsed_size: asset.parsedSize,
 			gzip_size: asset.gzipSize,
 		};
-		await insertChunkStats(newStat);
-		log(`Recorded new stat: sha=${sha} chunk=${chunk}`);
-	}
+	});
 
 	const webpackMajorVersion = parseInt(stats.version, 10);
 
-	let newChunkGroups = [];
+	let chunkGroups;
 	if (webpackMajorVersion >= 4) {
-		const newChunkGroups = _.flatMap(stats.chunks, chunk =>
+		chunkGroups = _.flatMap(stats.chunks, chunk =>
 			chunk.siblings.map(sibling => ({
 				sha,
 				chunk: chunk.id,
@@ -97,20 +97,28 @@ async function analyzeBundle(push) {
 		);
 	} else {
 		// support for webpack < 4
-		newChunkGroups = [
+		chunkGroups = [
 			{ sha, chunk: 'build', sibling: 'manifest' },
 			{ sha, chunk: 'build', sibling: 'vendor' },
 		];
 	}
 
-	await insertChunkGroups(newChunkGroups);
+	return { sha, chunkStats, chunkGroups };
+}
+
+function recordBundleStats({ sha, chunkStats, chunkGroups }) {
+	const chlen = chunkStats.length;
+	const cglen = chunkGroups.length;
+	log(`Recording stats for ${sha}: ${chlen} chunks, ${cglen} chunk groups`);
+	return Promise.all([insertChunkStats(chunkStats), insertChunkGroups(chunkGroups)]);
 }
 
 async function processQueue() {
 	while (true) {
 		const pushes = await getQueuedPushes();
 		for (const push of pushes) {
-			await processPush(push);
+			const pushStats = await processPush(push);
+			await recordBundleStats(pushStats);
 			await markPushAsProcessed(push.sha);
 		}
 
