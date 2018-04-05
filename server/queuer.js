@@ -1,5 +1,6 @@
 const { get } = require('axios');
 const { log, sleep } = require('./utils');
+const { getRepoEvents } = require('./github');
 const db = require('./db');
 
 const REPO = 'Automattic/wp-calypso';
@@ -21,8 +22,7 @@ function toPush(response) {
 
 async function fetchPushEvents(page = 1) {
 	// issue the API request
-	const url = `https://api.github.com/repos/${REPO}/events` + (page > 1 ? `?page=${page}` : '');
-	const response = await get(url);
+	const response = await getRepoEvents(REPO, page);
 
 	// extract the PushEvents to master
 	const pushes = response.data

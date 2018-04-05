@@ -2,7 +2,6 @@ const _ = require('lodash');
 const express = require('express');
 const bodyParser = require('body-parser');
 const db = require('./db');
-const github = require('./github');
 
 const port = 5000;
 const app = express();
@@ -14,14 +13,11 @@ app.get('/chunks', getChunks);
 app.get('/chart', getChart);
 app.get('/groupchart', getChunkGroupChart);
 app.get('/push', getPush);
-app.get('/push/:sha', getPush);
 app.post('/push', insertPush);
 app.get('/pushstats', getPushStats);
 app.get('/delta', getPushDelta);
 app.get('/pushlog', getPushLog);
 app.post('/removepush', removePush);
-app.get('/branches', getBranches);
-app.get('/branch', getBranch);
 
 app.listen(port, () => console.log('API service is running on port', port));
 
@@ -63,7 +59,7 @@ function getChunkGroupChart(req, res) {
 }
 
 function getPush(req, res) {
-	const { sha } = _.defaults(req.params, req.query);
+	const { sha } = req.query;
 
 	db
 		.getPush(sha)
@@ -99,7 +95,7 @@ function getPushStats(req, res) {
 }
 
 function getPushDelta(req, res) {
-	const { first, second } = _.defaults(req.params, req.query);
+	const { first, second } = req.query;
 
 	db
 		.getPushDelta(first, second)
@@ -122,24 +118,5 @@ function removePush(req, res) {
 	db
 		.removePush(sha)
 		.then(() => res.json({}))
-		.catch(reportError(res));
-}
-
-function getBranches(req, res) {
-	github
-		.getBranches()
-		.then(response => {
-			const branches = response.data.map(branch => branch.ref.replace(/^refs\/heads\//, ''));
-			res.json({ branches });
-		})
-		.catch(reportError(res));
-}
-
-function getBranch(req, res) {
-	const { branch } = req.query;
-
-	github
-		.getBranch(branch)
-		.then(response => res.json({ branch: response.data }))
 		.catch(reportError(res));
 }

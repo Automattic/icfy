@@ -1,8 +1,10 @@
 const { get } = require('axios');
 
-const REPO = 'Automattic/wp-calypso';
-const REPO_URL = `https://api.github.com/repos/${REPO}`;
+const repoUrl = repoSlug => `https://api.github.com/repos/${repoSlug}`;
 
-exports.getEvents = (page = 1) => get(`${REPO_URL}/events` + (page > 1 ? `?page=${page}` : ''));
-exports.getBranches = () => get(`${REPO_URL}/git/refs/heads`);
-exports.getBranch = name => get(`${REPO_URL}/branches/${name}`);
+exports.getRepoEvents = (repo, page = 1) =>
+	get(`${repoUrl(repo)}/events` + (page > 1 ? `?page=${page}` : ''));
+
+exports.getRepoBranches = repo => get(`${repoUrl(repo)}/git/refs/heads`);
+
+exports.getRepoBranch = (repo, name) => get(`${repoUrl(repo)}/branches/${name}`);
