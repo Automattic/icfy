@@ -1,7 +1,19 @@
 import React from 'react';
-import table from 'text-table';
 import { getPushLog } from './api';
 import Masterbar from './Masterbar';
+
+function Table({ data }) {
+	const [header, ...rows] = data;
+
+	return (
+		<table className="table">
+			<thead>
+				<tr>{header.map(col => <th>{col}</th>)}</tr>
+			</thead>
+			<tbody>{rows.map(row => <tr>{row.map(col => <td>{col}</td>)}</tr>)}</tbody>
+		</table>
+	);
+}
 
 class PushLogView extends React.Component {
 	state = { pushlog: null };
@@ -31,11 +43,11 @@ class PushLogView extends React.Component {
 				push.branch,
 				push.sha.slice(0, 10),
 				push.author,
-				push.message,
+				push.message.slice(0, 80),
 			]);
 		}
 
-		return <div className="text-table">{table(tableData)}</div>;
+		return <Table data={tableData} />;
 	}
 
 	render() {

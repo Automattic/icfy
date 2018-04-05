@@ -60,6 +60,15 @@
 	flex: auto;
 }
 
+.table th, .table td {
+	text-align: left;
+	padding: 1px 6px;
+}
+
+.table td:last-child {
+	width: 100%;
+}
+
 .text-table {
 	font-family: monospace;
 	white-space: pre-wrap;
