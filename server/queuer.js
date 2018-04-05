@@ -1,16 +1,9 @@
 const { get } = require('axios');
+const { log, sleep } = require('./utils');
 const db = require('./db');
 
 const REPO = 'Automattic/wp-calypso';
 const BRANCH = 'refs/heads/master';
-
-function log(...args) {
-	console.log(...args);
-}
-
-function sleep(ms) {
-	return new Promise(r => setTimeout(r, ms));
-}
 
 function printPush(push) {
 	return `${push.sha} at ${push.created_at} by ${push.author}: ${push.message}`;
