@@ -27,13 +27,15 @@ function analyzeBundle(push) {
 
 	const chunkNames = _.fromPairs(_.map(stats.chunks, chunk => [chunk.id, chunk.names]));
 
+	const getName = id => _.get(chunkNames, [ id, 0 ], id);
+
 	let chunkGroups;
 	if (webpackMajorVersion >= 4) {
 		chunkGroups = _.flatMap(stats.chunks, chunk =>
 			chunk.siblings.map(sibling => ({
 				sha,
-				chunk: chunk.id,
-				sibling,
+				chunk: getName(chunk.id),
+				sibling: getName(sibling),
 			}))
 		);
 	} else {

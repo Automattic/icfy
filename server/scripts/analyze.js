@@ -1,20 +1,15 @@
 const _ = require('lodash');
 const analyze = require('../analyze');
 
-const { chunkGroups, chunkNames } = analyze({});
-
-const getName = id => {
-	const name = chunkNames[id][0];
-	return name ? name : id;
-};
+const { chunkGroups } = analyze({});
 
 const groupStats = _.mapValues(_.groupBy(chunkGroups, 'chunk'), siblings =>
 	_.map(siblings, 'sibling')
 );
 
 _.forEach(groupStats, (siblings, chunk) => {
-	console.log(getName(chunk));
+	console.log(chunk);
 	for (const sibling of siblings) {
-		console.log(`  ${getName(sibling)}`);
+		console.log(`  ${sibling}`);
 	}
 });
