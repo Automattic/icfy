@@ -24,6 +24,8 @@ export const getDelta = (firstSha, secondSha) =>
 
 export const getPushLog = count => get(`${apiURL}/pushlog` + (count ? `?count=${count}` : ''));
 
+export const removePush = sha => post(`${apiURL}/removepush`, { sha });
+
 const GH_REPO_SLUG = 'Automattic/wp-calypso';
 const GH_REPO_URL = `https://api.github.com/repos/${GH_REPO_SLUG}`;
 

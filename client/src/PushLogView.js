@@ -1,5 +1,5 @@
 import React from 'react';
-import { getPushLog } from './api';
+import { getPushLog, removePush } from './api';
 import Masterbar from './Masterbar';
 
 function Table({ data }) {
@@ -14,6 +14,14 @@ function Table({ data }) {
 		</table>
 	);
 }
+
+const handleRemovePush = event => removePush(event.target.dataset.sha);
+
+const RemoveButton = ({ sha }) => (
+	<button className="remove-button" data-sha={sha} onClick={handleRemovePush}>
+		×
+	</button>
+);
 
 class PushLogView extends React.Component {
 	state = { pushlog: null };
@@ -38,8 +46,16 @@ class PushLogView extends React.Component {
 		const tableData = [];
 		tableData.push(['processed', 'branch', 'sha', 'author', 'message']);
 		for (const push of pushlog) {
+			const processed = push.processed ? (
+				'✓'
+			) : (
+				<span>
+					no <RemoveButton sha={push.sha} />
+				</span>
+			);
+
 			tableData.push([
-				push.processed ? '✓' : '',
+				processed,
 				push.branch,
 				push.sha.slice(0, 10),
 				push.author,

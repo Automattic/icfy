@@ -113,7 +113,7 @@ function getPushLog(req, res) {
 }
 
 function removePush(req, res) {
-	const { sha } = req.query;
+	const { sha } = req.body;
 
 	db
 		.removePush(sha)
