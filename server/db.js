@@ -5,6 +5,13 @@ const { deltaFromStats } = require('./delta');
 
 const K = knex(config);
 
+// Measure and report how long a promise takes to resolve or reject
+function timed(promise, label) {
+	console.time(label);
+	promise.then(() => console.timeEnd(label), () => console.timeEnd(label));
+	return promise;
+}
+
 exports.getPush = sha =>
 	K('pushes')
 		.select()
@@ -94,12 +101,12 @@ function getChunkSizes(shas, chunks) {
 		.andWhere('chunk', 'in', chunks);
 }
 
-function getSiblings(shas, chunks) {
+async function getSiblings(shas, chunks) {
 	if (_.isEmpty(chunks)) {
 		return [];
 	}
 
-	return K.distinct(['sha', 'sibling'])
+	return await K.distinct(['sha', 'sibling'])
 		.select()
 		.from('chunk_groups')
 		.where('sha', 'in', shas)
@@ -134,7 +141,7 @@ exports.getChunkGroupChartData = async (period, chunks, loadedChunks, branch = '
 	chunks = chunks ? _.uniq(_.split(chunks, ',')) : [];
 
 	// Retrieve the list of shas (and their created_at timestamps) we will collect size stats for
-	const pushes = await getPushShas(branch, lastCount);
+	const pushes = await timed(getPushShas(branch, lastCount), 'getPushShas');
 	const shas = _.map(pushes, 'sha');
 
 	/*
@@ -147,11 +154,11 @@ exports.getChunkGroupChartData = async (period, chunks, loadedChunks, branch = '
 	*/
 
 	// Sizes of the requested chunks themselves
-	const chunkSizes = await getChunkSizes(shas, chunks);
+	const chunkSizes = await timed(getChunkSizes(shas, chunks), 'getChunkSizes');
 	// Sizes of the requested chunks' siblings
-	const toIncludeSiblings = await getSiblingsWithSizes(shas, chunks);
+	const toIncludeSiblings = await timed(getSiblingsWithSizes(shas, chunks), 'getSiblingsWithSizes');
 	// Names of the excluded siblings (siblings of loadedChunks)
-	const toExcludeSiblings = await getSiblings(shas, loadedChunks);
+	const toExcludeSiblings = await timed(getSiblings(shas, loadedChunks), 'getSiblings');
 
 	// Group'em all by SHA
 	const chunksToIncludeByPush = _.groupBy(chunkSizes, 'sha');
