@@ -32,7 +32,7 @@ async function processPush(push) {
 	}
 
 	// update node_modules
-	await cmd('npm install');
+	await cmd('npm ci');
 
 	// build CSS -- the JS build depends on the CSS files
 	await cmd('npm run build-css');
