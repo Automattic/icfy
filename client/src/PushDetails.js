@@ -70,11 +70,13 @@ class PushDetails extends React.Component {
 
 		this.setState({ push: pushResponse.data.push });
 
-		if (!pushParams.prevSha) {
+		const prevSha = pushParams.prevSha || pushResponse.data.push.ancestor;
+
+		if (!prevSha) {
 			return;
 		}
 
-		const deltaResponse = await getDelta(pushParams.prevSha, pushParams.sha);
+		const deltaResponse = await getDelta(prevSha, pushParams.sha);
 
 		if (!pushParamsEqual(this.props, pushParams)) {
 			return;

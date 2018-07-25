@@ -75,21 +75,22 @@ class ChunkGroupsChartView extends React.Component {
 		});
 	}
 
-	loadChart() {
-		const { toLoadChunkGroups, givenChunkGroups, selectedPeriod, selectedBranch } = this.state;
-		getChunkGroupChartData(toLoadChunkGroups, givenChunkGroups, selectedPeriod, selectedBranch)
-			.then(response => {
-				let xAxis = `sum( ${toLoadChunkGroups.join(', ')} )`;
-				if (givenChunkGroups.length > 0) {
-					xAxis += ` - sum( ${givenChunkGroups.join(', ')} )`;
-				}
+	async loadChart() {
+		const { toLoadChunkGroups, givenChunkGroups } = this.state;
 
-				return {
-					chunk: xAxis,
-					data: response.data.data,
-				};
-			})
-			.then(data => this.setData(data));
+		const response = await getChunkGroupChartData(
+			toLoadChunkGroups,
+			givenChunkGroups,
+			this.state.selectedPeriod,
+			this.state.selectedBranch
+		);
+
+		let xAxis = `sum( ${toLoadChunkGroups.join(', ')} )`;
+		if (givenChunkGroups.length > 0) {
+			xAxis += ` - sum( ${givenChunkGroups.join(', ')} )`;
+		}
+
+		this.setData({ chunk: xAxis, data: response.data.data });
 	}
 
 	setGivenChunkGroups = givenChunkGroups => {
