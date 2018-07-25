@@ -75,24 +75,62 @@ function periodToLastCount(period) {
 	return lastCount;
 }
 
-exports.getChartData = (period, chunk, branch = 'master') => {
-	const lastCount = periodToLastCount(period);
-	return K.select(['p.sha', 'p.created_at', 's.stat_size', 's.parsed_size', 's.gzip_size'])
-		.from('pushes as p')
-		.join('stats as s', 'p.sha', 's.sha')
-		.where({ 'p.branch': branch, 's.chunk': chunk })
-		.orderBy('p.created_at', 'desc')
-		.limit(lastCount)
-		.then(res => _.sortBy(res, 'created_at'));
-};
-
-function getPushShas(branch, lastCount) {
-	return K('pushes')
+async function getPushShas(branch, lastCount) {
+	const masterPushesQuery = K('pushes')
 		.select(['sha', 'created_at'])
-		.where({ branch, processed: true })
+		.where({ branch: 'master', processed: true })
 		.orderBy('created_at', 'desc')
 		.limit(lastCount);
+
+	if (branch === 'master') {
+		return masterPushesQuery;
+	}
+
+	const [patchBranchPush] = await K('pushes')
+		.select(['sha', 'created_at', 'ancestor'])
+		.where({ branch, processed: true })
+		.orderBy('created_at', 'desc')
+		.limit(1);
+
+	if (!patchBranchPush || !patchBranchPush.ancestor) {
+		return masterPushesQuery;
+	}
+
+	const masterPushes = await masterPushesQuery;
+	const branchPointPushIndex = _.findIndex(masterPushes, { sha: patchBranchPush.ancestor });
+	if (branchPointPushIndex !== -1) {
+		masterPushes.splice(0, branchPointPushIndex, patchBranchPush);
+	}
+
+	return masterPushes;
 }
+
+exports.getChartData = async (period, chunk, branch = 'master') => {
+	const lastCount = periodToLastCount(period);
+	const pushes = await timed(getPushShas(branch, lastCount), 'getPushShas');
+	const shas = _.map(pushes, 'sha');
+	const stats = await K('stats')
+		.select(['sha', 'stat_size', 'parsed_size', 'gzip_size'])
+		.where('sha', 'in', shas)
+		.andWhere('chunk', chunk);
+
+	const pushesWithStats = pushes.map(({ sha, created_at }) => {
+		const pushStats = _.find(stats, { sha });
+		if (!pushStats) {
+			return null;
+		}
+
+		return {
+			sha,
+			created_at,
+			stat_size: pushStats.stat_size,
+			parsed_size: pushStats.parsed_size,
+			gzip_size: pushStats.gzip_size,
+		};
+	});
+
+	return _.sortBy(pushesWithStats.filter(Boolean), 'created_at');
+};
 
 function getChunkSizes(shas, chunks) {
 	return K('stats')
