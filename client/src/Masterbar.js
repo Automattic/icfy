@@ -16,7 +16,9 @@ const GitHubButton = () => (
 const Masterbar = () => (
 	<div className="masterbar">
 		<Link className="title" to="/">Is Calypso fast yet?</Link>
+		<Link to="/">Chunks</Link>
 		<Link to="/chunkgroups">Chunk Groups</Link>
+		<Link to="/branch">PR Branches</Link>
 		<Link to="/pushlog">Push Log</Link>
 		<span className="tagline">Tracking Webpack bundle sizes since 2017</span>
 		<GitHubButton />

@@ -132,7 +132,7 @@ class ChartView extends React.Component {
 							onChange={this.changePeriod}
 							options={PERIODS}
 						/>
-						in <b>master</b> (choose <Link to="/branch">another branch</Link>)
+						in <b>{ this.state.selectedBranch }</b> (choose <Link to="/branch">another branch</Link>)
 					</p>
 					{this.state.chartData && (
 						<Chart chartData={this.state.chartData} onMouseOver={this.showPush} />
