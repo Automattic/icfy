@@ -1,6 +1,7 @@
 import React from 'react';
 import { getPushLog, removePush } from './api';
 import Masterbar from './Masterbar';
+import { PushLink, GitHubLink } from './links';
 
 function Table({ data }) {
 	const [header, ...rows] = data;
@@ -64,6 +65,15 @@ class PushLogView extends React.Component {
 		);
 	}
 
+	renderSha(push) {
+		return (
+			<span>
+				{push.processed ? <PushLink sha={push.sha} len={10} /> : push.sha.slice(0, 10)}{' '}
+				<GitHubLink sha={push.sha} />
+			</span>
+		);
+	}
+
 	renderPushLog() {
 		const { pushlog } = this.state;
 
@@ -77,7 +87,7 @@ class PushLogView extends React.Component {
 			tableData.push([
 				this.renderProcessed(push),
 				push.branch,
-				push.sha.slice(0, 10),
+				this.renderSha(push),
 				push.created_at,
 				push.author,
 				push.message.slice(0, 80)

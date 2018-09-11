@@ -1,18 +1,10 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import { getPush, getDelta } from './api';
 import Delta from './Delta';
 import CommitMessage from './CommitMessage';
+import { PushLink, GitHubLink } from './links';
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-
-const pathJoin = (...parts) =>
-	parts.reduce((joined, part) => (!part ? joined : joined + '/' + part));
-
-const PushLink = ({ sha, prevSha }) => <Link to={pathJoin(`/push/${sha}`, prevSha)}>{sha}</Link>;
-const GitHubLink = ({ sha }) => (
-	<a href={`https://github.com/Automattic/wp-calypso/commit/${sha}`}>code</a>
-);
 
 const Push = ({ push }) => (
 	<div>
