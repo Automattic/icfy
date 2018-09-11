@@ -2,6 +2,7 @@ import React from 'react';
 import { getPush, getDelta } from './api';
 import Delta from './Delta';
 import CommitMessage from './CommitMessage';
+import FormatDate from './FormatDate';
 import { PushLink, GitHubLink } from './links';
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -10,7 +11,7 @@ const Push = ({ push }) => (
 	<div>
 		<b>Author:</b> {push ? push.author : '...'}
 		<br />
-		<b>At:</b> {push ? push.created_at : '...'}
+		<b>At:</b> {push ? <FormatDate date={push.created_at} /> : '...'}
 		<br />
 		<b>Message:</b> {push ? <CommitMessage message={push.message} /> : '...'}
 	</div>
