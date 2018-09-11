@@ -26,6 +26,13 @@ exports.getLastPush = () =>
 		.orderBy('id', 'desc')
 		.limit(1);
 
+exports.getPushesForBranch = branch =>
+	K('pushes')
+		.select()
+		.where('branch', branch)
+		.orderBy('id', 'desc')
+		.limit(100);
+
 exports.getQueuedPushes = () =>
 	K('pushes')
 		.select()

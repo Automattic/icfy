@@ -14,6 +14,7 @@ app.get('/chart', getChart);
 app.get('/groupchart', getChunkGroupChart);
 app.get('/push', getPush);
 app.post('/push', insertPush);
+app.get('/pushes', getPushes);
 app.get('/pushstats', getPushStats);
 app.get('/delta', getPushDelta);
 app.get('/pushlog', getPushLog);
@@ -34,8 +35,7 @@ const reportError = res => error => {
 };
 
 function getChunks(req, res) {
-	db
-		.getKnownChunks()
+	db.getKnownChunks()
 		.then(chunks => res.json({ chunks }))
 		.catch(reportError(res));
 }
@@ -43,8 +43,7 @@ function getChunks(req, res) {
 function getChart(req, res) {
 	const { period, chunk, branch } = req.query;
 
-	db
-		.getChartData(period, chunk, branch)
+	db.getChartData(period, chunk, branch)
 		.then(data => res.json({ data }))
 		.catch(reportError(res));
 }
@@ -52,8 +51,7 @@ function getChart(req, res) {
 function getChunkGroupChart(req, res) {
 	const { period, chunks, loadedChunks, branch } = req.query;
 
-	db
-		.getChunkGroupChartData(period, chunks, loadedChunks, branch)
+	db.getChunkGroupChartData(period, chunks, loadedChunks, branch)
 		.then(data => res.json({ data }))
 		.catch(reportError(res));
 }
@@ -61,8 +59,7 @@ function getChunkGroupChart(req, res) {
 function getPush(req, res) {
 	const { sha } = req.query;
 
-	db
-		.getPush(sha)
+	db.getPush(sha)
 		.then(([push = null]) => res.json({ push }))
 		.catch(reportError(res));
 }
@@ -79,17 +76,23 @@ function insertPush(req, res) {
 		return;
 	}
 
-	db
-		.insertPush(push)
+	db.insertPush(push)
 		.then(() => res.json({}))
+		.catch(reportError(res));
+}
+
+function getPushes(req, res) {
+	const { branch } = req.query;
+
+	db.getPushesForBranch(branch)
+		.then(pushes => res.json({ pushes }))
 		.catch(reportError(res));
 }
 
 function getPushStats(req, res) {
 	const { sha } = req.query;
 
-	db
-		.getPushStats(sha)
+	db.getPushStats(sha)
 		.then(stats => res.json({ stats }))
 		.catch(reportError(res));
 }
@@ -97,8 +100,7 @@ function getPushStats(req, res) {
 function getPushDelta(req, res) {
 	const { first, second } = req.query;
 
-	db
-		.getPushDelta(first, second)
+	db.getPushDelta(first, second)
 		.then(delta => res.json({ delta }))
 		.catch(reportError(res));
 }
@@ -106,8 +108,7 @@ function getPushDelta(req, res) {
 function getPushLog(req, res) {
 	const { count = 20 } = req.query;
 
-	db
-		.getPushLog(count)
+	db.getPushLog(count)
 		.then(pushlog => res.json({ pushlog }))
 		.catch(reportError(res));
 }
@@ -115,8 +116,7 @@ function getPushLog(req, res) {
 function removePush(req, res) {
 	const { sha } = req.body;
 
-	db
-		.removePush(sha)
+	db.removePush(sha)
 		.then(() => res.json({}))
 		.catch(reportError(res));
 }
