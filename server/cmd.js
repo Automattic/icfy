@@ -1,6 +1,30 @@
 const { spawn, exec } = require('child_process');
 const { log } = require('./utils');
 
+function logger(stream, prefix) {
+	let buffer = '';
+
+	stream.on('data', function(d) {
+		buffer += d;
+		while (1) {
+			let newLine = buffer.indexOf('\n');
+			if (newLine === -1) {
+				break;
+			}
+			const line = buffer.substring(0, newLine);
+			buffer = buffer.substring(newLine + 1);
+			log(prefix + line);
+		}
+	});
+
+	stream.on('end', function() {
+		if (buffer.length > 0) {
+			log(prefix + buffer);
+			buffer = '';
+		}
+	});
+}
+
 function startProc(cmdline, env, useShell) {
 	if (useShell) {
 		return exec(cmdline, { env });
@@ -21,6 +45,9 @@ function cmd(cmdline, options = {}) {
 			stdout = '';
 			proc.stdout.on('data', data => (stdout += data));
 		}
+
+		logger(proc.stdout, '  out> ');
+		logger(proc.stderr, '  err> ');
 
 		proc.on('close', code => {
 			if (code === 0) {
