@@ -5,7 +5,7 @@ const GitHubButton = () => (
 	<span className="button">
 		<a
 			className="github-button"
-			href="https://github.com/jsnajdr/icfy"
+			href="https://github.com/Automattic/icfy"
 			aria-label="View sources on GitHub"
 		>
 			GitHub
