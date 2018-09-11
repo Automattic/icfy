@@ -15,25 +15,53 @@ function Table({ data }) {
 	);
 }
 
-const handleRemovePush = event => removePush(event.target.dataset.sha);
-
-const RemoveButton = ({ sha }) => (
-	<button className="remove-button" data-sha={sha} onClick={handleRemovePush}>
-		×
+const RemoveButton = ({ sha, onClick }) => (
+	<button className="remove-button" data-sha={sha} onClick={onClick}>
+		🗑
 	</button>
 );
 
 class PushLogView extends React.Component {
-	state = { pushlog: null };
+	state = { pushlog: null, removingPushSha: null };
 
 	componentDidMount() {
+		this.loadPushLog();
+	}
+
+	async loadPushLog() {
 		const searchParams = new URLSearchParams(this.props.location.search);
 		const count = searchParams.get('count');
 
-		getPushLog(count).then(response => {
-			const { pushlog } = response.data;
-			this.setState({ pushlog });
-		});
+		const response = await getPushLog(count);
+		this.setState({ pushlog: response.data.pushlog });
+	}
+
+	handleRemovePush = async event => {
+		const { sha } = event.target.dataset;
+		this.setState({ removingPushSha: sha });
+		await removePush(sha);
+		this.setState({ removingPushSha: null, pushlog: null });
+		await this.loadPushLog();
+	};
+
+	renderProcessed(push) {
+		if (push.processed) {
+			return '👍';
+		}
+
+		if (push.branch === 'master') {
+			return 'waiting…';
+		}
+
+		if (this.state.removingPushSha === push.sha) {
+			return 'removing…';
+		}
+
+		return (
+			<span>
+				waiting… (<RemoveButton sha={push.sha} onClick={this.handleRemovePush} />)
+			</span>
+		);
 	}
 
 	renderPushLog() {
@@ -44,22 +72,15 @@ class PushLogView extends React.Component {
 		}
 
 		const tableData = [];
-		tableData.push(['processed', 'branch', 'sha', 'author', 'message']);
+		tableData.push(['processed', 'branch', 'sha', 'created_at', 'author', 'message']);
 		for (const push of pushlog) {
-			const processed = push.processed ? (
-				'✓'
-			) : (
-				<span>
-					no <RemoveButton sha={push.sha} />
-				</span>
-			);
-
 			tableData.push([
-				processed,
+				this.renderProcessed(push),
 				push.branch,
 				push.sha.slice(0, 10),
+				push.created_at,
 				push.author,
-				push.message.slice(0, 80),
+				push.message.slice(0, 80)
 			]);
 		}
 
