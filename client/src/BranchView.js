@@ -1,8 +1,10 @@
 import React from 'react';
-import { getBranches, getBranch, getPush, getDelta, insertPush } from './api';
+import { getBranches, getBranch, getPushes, getDelta, insertPush } from './api';
 import Masterbar from './Masterbar';
 import Delta from './Delta';
 import CommitMessage from './CommitMessage';
+import Push from './Push';
+import { PushLink, GitHubLink } from './links';
 import Select from 'react-select';
 import 'react-select/dist/react-select.css';
 
@@ -24,25 +26,6 @@ const BranchCommit = ({ commit }) => {
 	);
 };
 
-class BranchPushSubmit extends React.Component {
-	handleSubmit = () =>
-		insertPush({
-			...this.props.commit,
-			branch: this.props.branch,
-		});
-
-	render() {
-		return (
-			<p>
-				We don't have stats for this push.
-				<button className="button" onClick={this.handleSubmit}>
-					Build Them!
-				</button>
-			</p>
-		);
-	}
-}
-
 class BranchView extends React.Component {
 	constructor(props) {
 		super(props);
@@ -54,8 +37,9 @@ class BranchView extends React.Component {
 			selectedBranch,
 			branchList: null,
 			selectedBranchHead: null,
-			selectedBranchPush: null,
-			selectedBranchDelta: null,
+			selectedBranchPushes: null,
+			selectedBranchLastPush: null,
+			selectedBranchLastDelta: null,
 		};
 	}
 
@@ -90,20 +74,22 @@ class BranchView extends React.Component {
 
 		this.setState({
 			selectedBranchHead: head,
-			selectedBranchPush: 'loading',
+			selectedBranchPushes: 'loading',
 		});
 
-		const pushResponse = await getPush(sha);
-		const { push } = pushResponse.data;
+		const pushesResponse = await getPushes(branchName);
+		const { pushes } = pushesResponse.data;
+		const lastPush = pushes.find(p => p.sha === sha) || null;
 
-		this.setState({ selectedBranchPush: push });
+		this.setState({
+			selectedBranchPushes: pushes,
+			selectedBranchLastPush: lastPush,
+		});
 
-		if (!push || !push.ancestor) {
-			return;
+		if (lastPush && lastPush.processed) {
+			const deltaResponse = await getDelta(lastPush.ancestor, lastPush.sha);
+			this.setState({ selectedBranchLastDelta: deltaResponse.data.delta });
 		}
-
-		const deltaResponse = await getDelta(push.ancestor, push.sha);
-		this.setState({ selectedBranchDelta: deltaResponse.data.delta });
 	}
 
 	selectBranch = option => {
@@ -112,10 +98,19 @@ class BranchView extends React.Component {
 		this.setState({
 			selectedBranch,
 			selectedBranchHead: null,
-			selectedBranchPush: null,
+			selectedBranchPushes: null,
 			selectedBranchDelta: null,
 		});
 		this.loadBranchHead(selectedBranch);
+	};
+
+	handlePushSubmit = async () => {
+		const newPush = {
+			...this.state.selectedBranchHead,
+			branch: this.state.selectedBranch,
+		};
+		await insertPush(newPush);
+		await this.loadBranchHead(this.state.selectedBranch);
 	};
 
 	renderBranchCommit() {
@@ -125,33 +120,82 @@ class BranchView extends React.Component {
 			return null;
 		}
 
-		return <BranchCommit commit={selectedBranchHead} />;
+		return (
+			<div>
+				<h4>Latest push in this branch:</h4>
+				<BranchCommit commit={selectedBranchHead} />
+			</div>
+		);
 	}
 
-	renderBranchPushInfo() {
+	renderBranchLastPushInfo() {
 		const {
 			selectedBranch,
 			selectedBranchHead,
-			selectedBranchPush,
-			selectedBranchDelta,
+			selectedBranchPushes,
+			selectedBranchLastPush,
+			selectedBranchLastDelta,
 		} = this.state;
 
 		if (!selectedBranchHead) {
 			return null;
 		}
 
-		if (selectedBranchPush === 'loading') {
-			return <p>...</p>;
-		}
-		if (!selectedBranchPush) {
-			return <BranchPushSubmit branch={selectedBranch} commit={selectedBranchHead} />;
-		}
-
-		if (!selectedBranchPush.processed || !selectedBranchPush.ancestor) {
-			return <p>Building...</p>;
+		if (selectedBranchPushes === 'loading') {
+			return (
+				<p>
+					Loading pushes for for branch <i>{selectedBranch}</i>…
+				</p>
+			);
 		}
 
-		return <Delta delta={selectedBranchDelta} />;
+		if (!selectedBranchLastPush) {
+			return this.renderBranchPushSubmit();
+		}
+
+		if (!selectedBranchLastPush.processed) {
+			return <p>Building…</p>;
+		}
+
+		return <Delta delta={selectedBranchLastDelta} />;
+	}
+
+	renderBranchPushSubmit() {
+		return (
+			<p>
+				We don't have stats for this push.
+				<button className="button" onClick={this.handlePushSubmit}>
+					Build Them!
+				</button>
+			</p>
+		);
+	}
+
+	renderBranchPreviousPushes() {
+		const { selectedBranchHead, selectedBranchPushes } = this.state;
+
+		if (!Array.isArray(selectedBranchPushes)) {
+			return null;
+		}
+
+		const previousPushes = selectedBranchPushes.filter(p => p.sha !== selectedBranchHead.sha);
+		if (previousPushes.length === 0) {
+			return null;
+		}
+
+		return (
+			<div>
+				<h4>Previous pushes in this branch:</h4>
+				{previousPushes.map(push => (
+					<div className="push" key={push.sha}>
+						<b>Commit:</b> <PushLink sha={push.sha} prevSha={push.ancestor} />{' '}
+						<GitHubLink sha={push.sha} />
+						<br />
+						<Push push={push} />
+					</div>
+				))}
+			</div>
+		);
 	}
 
 	render() {
@@ -176,7 +220,8 @@ class BranchView extends React.Component {
 					</label>
 					<div className="branch-info">
 						{this.renderBranchCommit()}
-						{this.renderBranchPushInfo()}
+						{this.renderBranchLastPushInfo()}
+						{this.renderBranchPreviousPushes()}
 					</div>
 				</div>
 			</div>

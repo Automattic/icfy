@@ -1,21 +1,10 @@
 import React from 'react';
 import { getPush, getDelta } from './api';
 import Delta from './Delta';
-import CommitMessage from './CommitMessage';
-import FormatDate from './FormatDate';
+import Push from './Push';
 import { PushLink, GitHubLink } from './links';
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-
-const Push = ({ push }) => (
-	<div>
-		<b>Author:</b> {push ? push.author : '...'}
-		<br />
-		<b>At:</b> {push ? <FormatDate date={push.created_at} /> : '...'}
-		<br />
-		<b>Message:</b> {push ? <CommitMessage message={push.message} /> : '...'}
-	</div>
-);
 
 function pushParamsEqual(paramsA, paramsB) {
 	return ['sha', 'prevSha'].every(prop => paramsA[prop] === paramsB[prop]);
