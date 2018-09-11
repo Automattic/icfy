@@ -1,6 +1,7 @@
 import React from 'react';
 import { getPushLog, removePush } from './api';
 import Masterbar from './Masterbar';
+import CommitMessage from './CommitMessage';
 import { PushLink, GitHubLink } from './links';
 
 function Table({ data }) {
@@ -74,6 +75,11 @@ class PushLogView extends React.Component {
 		);
 	}
 
+	renderCommitMessage(push) {
+		const message = push.message.slice(0, 80);
+		return <CommitMessage message={message} />;
+	}
+
 	renderPushLog() {
 		const { pushlog } = this.state;
 
@@ -90,7 +96,7 @@ class PushLogView extends React.Component {
 				this.renderSha(push),
 				push.created_at,
 				push.author,
-				push.message.slice(0, 80)
+				this.renderCommitMessage(push)
 			]);
 		}
 
