@@ -122,6 +122,6 @@ function removePush(req, res) {
 		.catch(reportError(res));
 }
 
-function sumbitStats(req, res) {
+function submitStats(req, res) {
 	res.status(200).end();
 }
