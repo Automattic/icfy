@@ -21,6 +21,7 @@ app.get('/delta', getPushDelta);
 app.get('/delta/:size/:first/:second', getPushDelta);
 app.get('/branches', getBranches);
 app.get('/branch', getBranch);
+app.post('/stats', postStats);
 
 app.listen(port, () => console.log('API service is running on port', port));
 
@@ -114,4 +115,8 @@ function getBranch(req, res) {
 		.getBranch(branch)
 		.then(response => res.json({ branch: response.data }))
 		.catch(reportError(res));
+}
+
+function postStats(req, res ) {
+	console.log(req);
 }
