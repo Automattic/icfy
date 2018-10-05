@@ -191,20 +191,4 @@ class ChunkGroupsChartView extends React.Component {
 	}
 }
 
-// TODO: moving the sum to the server
-
-// function sumChunks(chunks, chunkNames) {
-// 	const chunksData = chunks.map(chunk => chunk.data);
-// 	const chartData = _.zip(...chunksData).map(zippedChunksData => {
-// 		const chunk = `sum( ${chunkNames.join(', ')} )`;
-// 		const stat_size = _.sumBy(zippedChunksData, data => data.stat_size);
-// 		const parsed_size = _.sumBy(zippedChunksData, data => data.parsed_size);
-// 		const gzip_size = _.sumBy(zippedChunksData, data => data.gzip_size);
-// 		const sha = zippedChunksData[0].sha;
-
-// 		return { chunk, stat_size, parsed_size, gzip_size, sha };
-// 	});
-// 	return chartData;
-// }
-
 export default ChunkGroupsChartView;
