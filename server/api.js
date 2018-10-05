@@ -19,6 +19,7 @@ app.get('/pushstats', getPushStats);
 app.get('/delta', getPushDelta);
 app.get('/pushlog', getPushLog);
 app.post('/removepush', removePush);
+app.post('/submit-stats', submitStats);
 
 app.listen(port, () => console.log('API service is running on port', port));
 
@@ -119,4 +120,8 @@ function removePush(req, res) {
 	db.removePush(sha)
 		.then(() => res.json({}))
 		.catch(reportError(res));
+}
+
+function sumbitStats(req, res) {
+	res.status(200).end();
 }
