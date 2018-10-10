@@ -7,14 +7,13 @@ function analyzeBundle(push) {
 	const chart = getViewerData(stats, './public');
 	writeFileSync('chart.json', JSON.stringify(chart, null, 2));
 
-	const { sha, created_at } = push;
+	const { sha } = push;
 
 	const chunkStats = chart.map(asset => {
 		const [chunk, hash] = asset.label.split('.');
 
 		return {
 			sha,
-			created_at,
 			chunk,
 			hash,
 			stat_size: asset.statSize,
