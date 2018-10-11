@@ -264,3 +264,8 @@ exports.removePush = sha =>
 		.andWhere('processed', false);
 
 exports.insertCircleBuild = build => K('circle_builds').insert(build);
+
+exports.getCircleBuild = sha =>
+	K('circle_builds')
+		.select()
+		.where('sha', sha);
