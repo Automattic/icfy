@@ -12,6 +12,7 @@ function recordBundleStats({ sha, chunkStats, chunkGroups }) {
 
 async function processQueue() {
 	while (true) {
+		let skippedSomeBuild = false;
 		const pushes = await db.getQueuedPushes();
 		for (const push of pushes) {
 			const builder = push.branch === 'master' ? localBuilder : circleBuilder;
@@ -19,6 +20,7 @@ async function processQueue() {
 
 			if (!result) {
 				log(`Push ${push.sha} was not processed, will try again in a while`);
+				skippedSomeBuild = true;
 				continue;
 			}
 
@@ -29,7 +31,7 @@ async function processQueue() {
 			await db.markPushAsProcessed(push.sha);
 		}
 
-		if (pushes.length === 0) {
+		if (skippedSomeBuild || pushes.length === 0) {
 			// wait a minute before querying for pushes again
 			await sleep(60000);
 		}
