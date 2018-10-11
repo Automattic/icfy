@@ -1,16 +1,10 @@
 const _ = require('lodash');
 const knex = require('knex');
 const config = require('./knexfile');
+const { timed } = require('./utils');
 const { deltaFromStats } = require('./delta');
 
 const K = knex(config);
-
-// Measure and report how long a promise takes to resolve or reject
-function timed(promise, label) {
-	console.time(label);
-	promise.then(() => console.timeEnd(label), () => console.timeEnd(label));
-	return promise;
-}
 
 exports.getPush = sha =>
 	K('pushes')
