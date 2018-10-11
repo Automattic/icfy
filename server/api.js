@@ -131,8 +131,8 @@ function submitStats(req, res) {
 		return;
 	}
 
-	const build = req.body;
 	console.log('Received CircleCI webhook notification:', req.body);
+	const build = req.body.payload;
 	db.insertCircleBuild(build)
 		.then(() => res.json({}))
 		.catch(reportError(res));
