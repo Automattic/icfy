@@ -1,5 +1,6 @@
 const _ = require('lodash');
 const express = require('express');
+const nconf = require('nconf');
 const bodyParser = require('body-parser');
 const db = require('./db');
 
@@ -123,5 +124,16 @@ function removePush(req, res) {
 }
 
 function submitStats(req, res) {
-	res.status(200).end();
+	const { secret } = req.query;
+	if (secret !== nconf.get('circle:secret')) {
+		console.log('bad secret in CircleCI webhook notification');
+		res.status(500).send('Unauthenticated');
+		return;
+	}
+
+	const build = req.body;
+	console.log('Received CircleCI webhook notification:', req.body);
+	db.insertCircleBuild(build)
+		.then(() => res.json({}))
+		.catch(reportError(res));
 }

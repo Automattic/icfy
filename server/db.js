@@ -268,3 +268,5 @@ exports.removePush = sha =>
 		.where('sha', sha)
 		.andWhereNot('branch', 'master')
 		.andWhere('processed', false);
+
+exports.insertCircleBuild = build => K('circle_builds').insert(build);
