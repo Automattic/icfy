@@ -1,4 +1,5 @@
 const { join } = require('path');
+const { readStatsFromFile, getViewerData } = require('webpack-bundle-analyzer/lib/analyzer');
 const cmd = require('./cmd');
 const { log } = require('./utils');
 const analyzeBundle = require('./analyze');
@@ -38,12 +39,13 @@ exports.processPush = async function(push) {
 		},
 	});
 
-	// generate the chart data
 	log('Analyzing the bundle stats');
-	const bundleStats = analyzeBundle(push);
+	// read stats file and generate the chart data
+	const stats = readStatsFromFile('stats.json');
+	const chart = getViewerData(stats, './public');
 
-	// remove the stat files
-	await cmd('rm stats.json chart.json');
+	// remove the stats file
+	await cmd('rm stats.json');
 
 	// cleanup after the build, including the node_modules directory.
 	// we do a clean build for every push
@@ -51,7 +53,7 @@ exports.processPush = async function(push) {
 
 	process.chdir('..');
 
-	result.stats = bundleStats;
+	result.stats = analyzeBundle(push.sha, stats, chart);
 
 	return result;
-}
+};

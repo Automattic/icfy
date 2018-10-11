@@ -1,14 +1,6 @@
 const _ = require('lodash');
-const { writeFileSync } = require('fs');
-const { readStatsFromFile, getViewerData } = require('webpack-bundle-analyzer/lib/analyzer');
 
-function analyzeBundle(push) {
-	const stats = readStatsFromFile('stats.json');
-	const chart = getViewerData(stats, './public');
-	writeFileSync('chart.json', JSON.stringify(chart, null, 2));
-
-	const { sha } = push;
-
+function analyzeBundle(sha, stats, chart) {
 	const chunkStats = chart.map(asset => {
 		const [chunk, hash] = asset.label.split('.');
 
