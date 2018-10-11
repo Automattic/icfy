@@ -1,4 +1,3 @@
-const { get } = require('axios');
 const { log, sleep } = require('./utils');
 const { getRepoEvents } = require('./github');
 const db = require('./db');
