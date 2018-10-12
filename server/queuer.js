@@ -6,7 +6,7 @@ const REPO = 'Automattic/wp-calypso';
 const BRANCH = 'refs/heads/master';
 
 function printPush(push) {
-	return `${push.sha} at ${push.created_at} by ${push.author}: ${push.message}`;
+	return `${push.sha} in ${push.branch} at ${push.created_at} by ${push.author}: ${push.message}`;
 }
 
 function toPush(response) {
@@ -15,7 +15,7 @@ function toPush(response) {
 		created_at: response.created_at,
 		author: response.actor.login,
 		message: response.payload.commits[0].message.split('\n')[0],
-		branch: 'master',
+		branch: response.payload.ref.replace(/^refs\/heads\//, ''),
 	};
 }
 
@@ -25,7 +25,7 @@ async function fetchPushEvents(page = 1) {
 
 	// extract the PushEvents to master
 	const pushes = response.data
-		.filter(push => push.type === 'PushEvent' && push.payload.ref === BRANCH)
+		.filter(push => push.type === 'PushEvent' && push.payload.ref.startsWith('refs/heads/'))
 		.map(toPush);
 
 	log(`Retrieved ${pushes.length} pushes on page ${page}`);
@@ -64,7 +64,7 @@ async function findNewPushesSince(lastPush) {
 async function pollForNewPushes() {
 	while (true) {
 		try {
-			const [ lastPush ] = await db.getLastPush();
+			const [lastPush] = await db.getLastPush();
 			const newPushes = await findNewPushesSince(lastPush);
 
 			for (const push of newPushes) {
