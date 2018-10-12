@@ -1,6 +1,5 @@
 const { log, sleep } = require('./utils');
-const localBuilder = require('./build-local');
-const circleBuilder = require('./build-circle');
+const builder = require('./build-circle');
 const db = require('./db');
 
 function recordBundleStats({ sha, chunkStats, chunkGroups }) {
@@ -15,7 +14,6 @@ async function processQueue() {
 		let skippedSomeBuild = false;
 		const pushes = await db.getQueuedPushes();
 		for (const push of pushes) {
-			const builder = push.branch === 'master' ? localBuilder : circleBuilder;
 			const result = await builder.processPush(push);
 
 			if (!result) {
