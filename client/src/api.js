@@ -19,8 +19,6 @@ export const getPush = sha => get(`${apiURL}/push?sha=${sha}`);
 
 export const getPushes = branch => get(`${apiURL}/pushes?branch=${branch}`);
 
-export const insertPush = push => post(`${apiURL}/push`, push);
-
 export const getDelta = (firstSha, secondSha) =>
 	get(`${apiURL}/delta?first=${firstSha}&second=${secondSha}`);
 

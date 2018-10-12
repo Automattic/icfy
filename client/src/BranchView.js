@@ -1,5 +1,5 @@
 import React from 'react';
-import { getBranches, getBranch, getPushes, getDelta, insertPush } from './api';
+import { getBranches, getBranch, getPushes, getDelta } from './api';
 import Masterbar from './Masterbar';
 import Delta from './Delta';
 import CommitMessage from './CommitMessage';
@@ -104,15 +104,6 @@ class BranchView extends React.Component {
 		this.loadBranchHead(selectedBranch);
 	};
 
-	handlePushSubmit = async () => {
-		const newPush = {
-			...this.state.selectedBranchHead,
-			branch: this.state.selectedBranch,
-		};
-		await insertPush(newPush);
-		await this.loadBranchHead(this.state.selectedBranch);
-	};
-
 	renderBranchCommit() {
 		const { selectedBranch, selectedBranchHead } = this.state;
 
@@ -144,31 +135,16 @@ class BranchView extends React.Component {
 		if (selectedBranchPushes === 'loading') {
 			return (
 				<p>
-					Loading pushes for for branch <i>{selectedBranch}</i>…
+					Loading pushes for branch <i>{selectedBranch}</i>…
 				</p>
 			);
 		}
 
-		if (!selectedBranchLastPush) {
-			return this.renderBranchPushSubmit();
-		}
-
-		if (!selectedBranchLastPush.processed) {
+		if (!selectedBranchLastPush || !selectedBranchLastPush.processed) {
 			return <p>Building…</p>;
 		}
 
 		return <Delta delta={selectedBranchLastDelta} />;
-	}
-
-	renderBranchPushSubmit() {
-		return (
-			<p>
-				We don't have stats for this push.
-				<button className="button" onClick={this.handlePushSubmit}>
-					Build Them!
-				</button>
-			</p>
-		);
 	}
 
 	renderBranchPreviousPushes() {
