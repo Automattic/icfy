@@ -19,14 +19,22 @@ function toPush(response) {
 	};
 }
 
+function isRelevantPush(response) {
+	// filter PushEvents that have expected ref (branch) name and at least one commit.
+	// Commitless pushes are usually tags -- not interesting.
+	return (
+		response.type === 'PushEvent' &&
+		response.payload.ref.startsWith('refs/heads/') &&
+		response.payload.commits.length > 0
+	);
+}
+
 async function fetchPushEvents(page = 1) {
 	// issue the API request
 	const response = await getRepoEvents(REPO, page);
 
-	// extract the PushEvents to master
-	const pushes = response.data
-		.filter(push => push.type === 'PushEvent' && push.payload.ref.startsWith('refs/heads/'))
-		.map(toPush);
+	// extract the relevant info from relevant events
+	const pushes = response.data.filter(isRelevantPush).map(toPush);
 
 	log(`Retrieved ${pushes.length} pushes on page ${page}`);
 
