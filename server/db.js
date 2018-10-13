@@ -16,7 +16,6 @@ exports.insertPush = push => K('pushes').insert(push);
 exports.getLastPush = () =>
 	K('pushes')
 		.select()
-		.where('branch', 'master')
 		.orderBy('id', 'desc')
 		.limit(1);
 
