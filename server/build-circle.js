@@ -13,15 +13,7 @@ exports.processPush = async function(push) {
 		return null;
 	}
 
-	const result = {};
-
 	const { ancestor, build_num } = circleBuild;
-
-	// determine the ancestor
-	if (ancestor && push.branch !== 'master' && !push.ancestor) {
-		log(`ancestor of ${push.branch} (${push.sha}): [${ancestor}]`);
-		result.ancestor = ancestor;
-	}
 
 	// download the list of artifacts
 	const { data: artifacts } = await get(
@@ -32,10 +24,16 @@ exports.processPush = async function(push) {
 	const urls = ['stats.json', 'chart.json'].map(suffix => {
 		const artifact = artifacts.find(a => a.url.endsWith(suffix));
 		if (!artifact) {
-			throw new Error(`${suffix} file missing in artifacts of ${REPO}/${build_num}`);
+			log(`${suffix} file missing in artifacts of ${REPO}/${build_num}`);
+			return null;
 		}
 		return artifact.url;
 	});
+
+	// if both JSON files are not present, it's probably a race condition. Try again in a while
+	if (!urls.every(Boolean)) {
+		return null;
+	}
 
 	// Download stats.json and chart.json
 	const [stats, chart] = await Promise.all(
@@ -43,7 +41,15 @@ exports.processPush = async function(push) {
 	);
 
 	// Analyze the downloaded stats
-	result.stats = analyzeBundle(push.sha, stats, chart);
+	const result = {
+		stats: analyzeBundle(push.sha, stats, chart),
+	};
+
+	// determine the ancestor
+	if (ancestor && push.branch !== 'master' && !push.ancestor) {
+		log(`ancestor of ${push.branch} (${push.sha}): [${ancestor}]`);
+		result.ancestor = ancestor;
+	}
 
 	return result;
 };
