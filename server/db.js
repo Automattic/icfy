@@ -268,3 +268,9 @@ exports.getCircleBuild = sha =>
 	K('circle_builds')
 		.select()
 		.where('sha', sha);
+
+exports.getCircleBuildLog = count =>
+	K('circle_builds')
+		.select()
+		.orderBy('build_num', 'desc')
+		.limit(count);

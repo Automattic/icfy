@@ -20,6 +20,7 @@ app.get('/pushstats', getPushStats);
 app.get('/delta', getPushDelta);
 app.get('/pushlog', getPushLog);
 app.post('/removepush', removePush);
+app.get('/buildlog', getCircleBuildLog);
 app.post('/submit-stats', submitStats);
 
 app.listen(port, () => console.log('API service is running on port', port));
@@ -120,6 +121,14 @@ function removePush(req, res) {
 
 	db.removePush(sha)
 		.then(() => res.json({}))
+		.catch(reportError(res));
+}
+
+function getCircleBuildLog(req, res) {
+	const { count = 20 } = req.query;
+
+	db.getCircleBuildLog(count)
+		.then(buildlog => res.json({ buildlog }))
 		.catch(reportError(res));
 }
 
