@@ -5,6 +5,27 @@ const analyzeBundle = require('./analyze');
 
 const REPO = 'Automattic/wp-calypso';
 
+async function downloadArtifactList(buildNum) {
+	try {
+		const url = `https://circleci.com/api/v1.1/project/github/${REPO}/${buildNum}/artifacts`;
+		const response = await get(url);
+		return response.data;
+	} catch (error) {
+		log(`could not download artifacts of ${REPO}/${buildNum}:`, error);
+		return null;
+	}
+}
+
+async function downloadArtifact(url) {
+	try {
+		const response = await get(url);
+		return response.data;
+	} catch (error) {
+		log(`could not download artifact file ${url}:`, error);
+		return null;
+	}
+}
+
 exports.processPush = async function(push) {
 	const [circleBuild] = await db.getCircleBuild(push.sha);
 	if (!circleBuild) {
@@ -14,12 +35,8 @@ exports.processPush = async function(push) {
 	const { ancestor, build_num } = circleBuild;
 
 	// download the list of artifacts
-	let artifacts;
-	try {
-		const url = `https://circleci.com/api/v1.1/project/github/${REPO}/${build_num}/artifacts`;
-		artifacts = (await get(url)).data;
-	} catch (error) {
-		log(`could not download artifacts of ${REPO}/${build_num}:`, error);
+	const artifacts = await downloadArtifactList(build_num);
+	if (!artifacts) {
 		return null;
 	}
 
@@ -40,8 +57,12 @@ exports.processPush = async function(push) {
 
 	// Download stats.json and chart.json
 	const [stats, chart] = await Promise.all(
-		urls.map(url => timed(get(url).then(response => response.data), `Downloading ${url}`))
+		urls.map(url => timed(downloadArtifact(url), `Downloading ${url}`))
 	);
+
+	if (!stats || !chart) {
+		return null;
+	}
 
 	// Analyze the downloaded stats
 	const result = {
