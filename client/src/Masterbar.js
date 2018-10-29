@@ -20,6 +20,7 @@ const Masterbar = () => (
 		<Link to="/chunkgroups">Chunk Groups</Link>
 		<Link to="/branch">PR Branches</Link>
 		<Link to="/pushlog">Push Log</Link>
+		<Link to="/buildlog">Build Log</Link>
 		<span className="tagline">Tracking Webpack bundle sizes since 2017</span>
 		<GitHubButton />
 	</div>

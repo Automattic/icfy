@@ -26,6 +26,9 @@ export const getPushLog = count => get(`${apiURL}/pushlog` + (count ? `?count=${
 
 export const removePush = sha => post(`${apiURL}/removepush`, { sha });
 
+export const getCircleBuildLog = count =>
+	get(`${apiURL}/buildlog` + (count ? `?count=${count}` : ''));
+
 const GH_REPO_SLUG = 'Automattic/wp-calypso';
 const GH_REPO_URL = `https://api.github.com/repos/${GH_REPO_SLUG}`;
 

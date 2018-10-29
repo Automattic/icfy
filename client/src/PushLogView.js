@@ -5,9 +5,7 @@ import CommitMessage from './CommitMessage';
 import FormatDate from './FormatDate';
 import { PushLink, GitHubLink } from './links';
 
-function Table({ data }) {
-	const [header, ...rows] = data;
-
+function Table({ header, rows }) {
 	return (
 		<table className="table">
 			<thead>
@@ -88,20 +86,17 @@ class PushLogView extends React.Component {
 			return 'Loading…';
 		}
 
-		const tableData = [];
-		tableData.push(['processed', 'branch', 'sha', 'created_at', 'author', 'message']);
-		for (const push of pushlog) {
-			tableData.push([
-				this.renderProcessed(push),
-				push.branch,
-				this.renderSha(push),
-				<FormatDate date={push.created_at} />,
-				push.author,
-				this.renderCommitMessage(push)
-			]);
-		}
+		const header = ['processed', 'branch', 'sha', 'created_at', 'author', 'message'];
+		const rows = pushlog.map(push => [
+			this.renderProcessed(push),
+			push.branch,
+			this.renderSha(push),
+			<FormatDate date={push.created_at} />,
+			push.author,
+			this.renderCommitMessage(push),
+		]);
 
-		return <Table data={tableData} />;
+		return <Table header={header} rows={rows} />;
 	}
 
 	render() {
