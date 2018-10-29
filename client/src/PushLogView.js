@@ -3,6 +3,7 @@ import { getPushLog, removePush } from './api';
 import Masterbar from './Masterbar';
 import CommitMessage from './CommitMessage';
 import FormatDate from './FormatDate';
+import Select from './Select';
 import { PushLink, GitHubLink } from './links';
 
 function Table({ header, rows }) {
@@ -22,19 +23,47 @@ const RemoveButton = ({ sha, onClick }) => (
 	</button>
 );
 
+const DEFAULT_COUNT = '20';
+const COUNTS = [
+	{ value: '20', name: 'last 20 pushes' },
+	{ value: '50', name: 'last 50 pushes' },
+	{ value: '100', name: 'last 100 pushes' },
+	{ value: '200', name: 'last 200 pushes' },
+];
+
 class PushLogView extends React.Component {
-	state = { pushlog: null, removingPushSha: null };
+	constructor(props) {
+		super(props);
+
+		const searchParams = new URLSearchParams(this.props.location.search);
+		const count = searchParams.get('count') || DEFAULT_COUNT;
+
+		this.state = { count, pushlog: null, removingPushSha: null };
+	}
 
 	componentDidMount() {
 		this.loadPushLog();
 	}
 
-	async loadPushLog() {
-		const searchParams = new URLSearchParams(this.props.location.search);
-		const count = searchParams.get('count');
+	componentDidUpdate(prevProps, prevState) {
+		if (prevState.count !== this.state.count) {
+			this.loadPushLog();
+		}
+	}
 
-		const response = await getPushLog(count);
+	async loadPushLog() {
+		const response = await getPushLog(this.state.count);
 		this.setState({ pushlog: response.data.pushlog });
+	}
+
+	changeCount = event => {
+		const count = event.target.value;
+		this.props.history.push({ search: count !== DEFAULT_COUNT ? `?count=${count}` : '' });
+		this.setState({ count });
+	};
+
+	renderSelectCount() {
+		return <Select value={this.state.count} onChange={this.changeCount} options={COUNTS} />;
 	}
 
 	handleRemovePush = async event => {
@@ -103,7 +132,10 @@ class PushLogView extends React.Component {
 		return (
 			<div className="layout">
 				<Masterbar />
-				<div className="content">{this.renderPushLog()}</div>
+				<div className="content">
+					{this.renderSelectCount()}
+					{this.renderPushLog()}
+				</div>
 			</div>
 		);
 	}

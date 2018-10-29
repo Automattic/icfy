@@ -1,6 +1,7 @@
 import React from 'react';
 import { getCircleBuildLog } from './api';
 import Masterbar from './Masterbar';
+import Select from './Select';
 import { PushLink, GitHubLink } from './links';
 
 function Table({ header, rows }) {
@@ -14,19 +15,47 @@ function Table({ header, rows }) {
 	);
 }
 
+const DEFAULT_COUNT = '20';
+const COUNTS = [
+	{ value: '20', name: 'last 20 builds' },
+	{ value: '50', name: 'last 50 builds' },
+	{ value: '100', name: 'last 100 builds' },
+	{ value: '200', name: 'last 200 builds' },
+];
+
 class BuildLogView extends React.Component {
-	state = { buildlog: null, removingPushSha: null };
+	constructor(props) {
+		super(props);
+
+		const searchParams = new URLSearchParams(this.props.location.search);
+		const count = searchParams.get('count') || DEFAULT_COUNT;
+
+		this.state = { count, buildlog: null };
+	}
 
 	componentDidMount() {
 		this.loadBuildLog();
 	}
 
-	async loadBuildLog() {
-		const searchParams = new URLSearchParams(this.props.location.search);
-		const count = searchParams.get('count');
+	componentDidUpdate(prevProps, prevState) {
+		if (prevState.count !== this.state.count) {
+			this.loadBuildLog();
+		}
+	}
 
-		const response = await getCircleBuildLog(count);
+	async loadBuildLog() {
+		const response = await getCircleBuildLog(this.state.count);
 		this.setState({ buildlog: response.data.buildlog });
+	}
+
+	changeCount = event => {
+		const count = event.target.value;
+		this.props.history.push({ search: count !== DEFAULT_COUNT ? `?count=${count}` : '' });
+		this.setState({ count });
+	};
+
+	renderSelectCount() {
+		return <Select value={this.state.count} onChange={this.changeCount} options={COUNTS} />;
 	}
 
 	renderSha(sha) {
@@ -62,7 +91,10 @@ class BuildLogView extends React.Component {
 		return (
 			<div className="layout">
 				<Masterbar />
-				<div className="content">{this.renderBuildLog()}</div>
+				<div className="content">
+					{this.renderSelectCount()}
+					{this.renderBuildLog()}
+				</div>
 			</div>
 		);
 	}
