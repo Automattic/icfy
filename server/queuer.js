@@ -36,7 +36,10 @@ async function fetchPushEvents(page = 1) {
 	// extract the relevant info from relevant events
 	const pushes = response.data.filter(isRelevantPush).map(toPush);
 
-	log(`Retrieved ${pushes.length} pushes on page ${page}`);
+	log(`Retrieved ${pushes.length} pushes on page ${page}:`);
+	for (const push of pushes) {
+		log(`  ${printPush(push)}`);
+	}
 
 	return pushes;
 }
