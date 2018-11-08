@@ -1,5 +1,5 @@
 import React from 'react';
-import { getCircleBuildLog } from './api';
+import { buildQuery, getCircleBuildLog } from './api';
 import Masterbar from './Masterbar';
 import Select from './Select';
 import { PushLink, GitHubLink } from './links';
@@ -23,14 +23,29 @@ const COUNTS = [
 	{ value: '200', name: 'last 200 builds' },
 ];
 
+const DEFAULT_BRANCH = '*';
+const BRANCHES = [
+	{ value: '*', name: 'all branches' },
+	{ value: 'master', name: 'master branch' },
+	{ value: '!master', name: 'non-master branches' },
+];
+
+function buildSearchQuery(count, branch) {
+	return buildQuery({
+		count: count !== DEFAULT_COUNT ? count : undefined,
+		branch: branch !== DEFAULT_BRANCH ? branch : undefined,
+	});
+}
+
 class BuildLogView extends React.Component {
 	constructor(props) {
 		super(props);
 
 		const searchParams = new URLSearchParams(this.props.location.search);
 		const count = searchParams.get('count') || DEFAULT_COUNT;
+		const branch = searchParams.get('branch') || DEFAULT_BRANCH;
 
-		this.state = { count, buildlog: null };
+		this.state = { count, branch, buildlog: null };
 	}
 
 	componentDidMount() {
@@ -38,24 +53,35 @@ class BuildLogView extends React.Component {
 	}
 
 	componentDidUpdate(prevProps, prevState) {
-		if (prevState.count !== this.state.count) {
+		if (prevState.count !== this.state.count || prevState.branch !== this.state.branch) {
 			this.loadBuildLog();
 		}
 	}
 
 	async loadBuildLog() {
-		const response = await getCircleBuildLog(this.state.count);
+		const response = await getCircleBuildLog(this.state.count, this.state.branch);
 		this.setState({ buildlog: response.data.buildlog });
 	}
 
 	changeCount = event => {
 		const count = event.target.value;
-		this.props.history.push({ search: count !== DEFAULT_COUNT ? `?count=${count}` : '' });
+		this.props.history.push({ search: buildSearchQuery(count, this.state.branch) });
 		this.setState({ count });
 	};
 
-	renderSelectCount() {
-		return <Select value={this.state.count} onChange={this.changeCount} options={COUNTS} />;
+	changeBranch = event => {
+		const branch = event.target.value;
+		this.props.history.push({ search: buildSearchQuery(this.state.count, branch) });
+		this.setState({ branch });
+	};
+
+	renderFilter() {
+		return (
+			<div>
+				<Select value={this.state.count} onChange={this.changeCount} options={COUNTS} /> in{' '}
+				<Select value={this.state.branch} onChange={this.changeBranch} options={BRANCHES} />
+			</div>
+		);
 	}
 
 	renderSha(sha) {
@@ -92,7 +118,7 @@ class BuildLogView extends React.Component {
 			<div className="layout">
 				<Masterbar />
 				<div className="content">
-					{this.renderSelectCount()}
+					{this.renderFilter()}
 					{this.renderBuildLog()}
 				</div>
 			</div>

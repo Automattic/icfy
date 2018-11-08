@@ -3,6 +3,18 @@ import { get, post } from 'axios';
 // const apiURL = 'http://localhost:5000';
 const apiURL = 'http://api.iscalypsofastyet.com:5000';
 
+export function buildQuery(query) {
+	let queryString = '';
+	let separator = '?';
+	for (const [key, value] of Object.entries(query)) {
+		if (value !== undefined) {
+			queryString += separator + key + '=' + value;
+			separator = '&';
+		}
+	}
+	return queryString;
+}
+
 export const getChartData = (chunk, period, branch) =>
 	get(`${apiURL}/chart?period=${period}&chunk=${chunk}&branch=${branch}`);
 
@@ -22,12 +34,13 @@ export const getPushes = branch => get(`${apiURL}/pushes?branch=${branch}`);
 export const getDelta = (firstSha, secondSha) =>
 	get(`${apiURL}/delta?first=${firstSha}&second=${secondSha}`);
 
-export const getPushLog = count => get(`${apiURL}/pushlog` + (count ? `?count=${count}` : ''));
+export const getPushLog = (count, branch) =>
+	get(`${apiURL}/pushlog` + buildQuery({ count, branch }));
 
 export const removePush = sha => post(`${apiURL}/removepush`, { sha });
 
-export const getCircleBuildLog = count =>
-	get(`${apiURL}/buildlog` + (count ? `?count=${count}` : ''));
+export const getCircleBuildLog = (count, branch) =>
+	get(`${apiURL}/buildlog` + buildQuery({ count, branch }));
 
 const GH_REPO_SLUG = 'Automattic/wp-calypso';
 const GH_REPO_URL = `https://api.github.com/repos/${GH_REPO_SLUG}`;
