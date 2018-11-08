@@ -109,9 +109,9 @@ function getPushDelta(req, res) {
 }
 
 function getPushLog(req, res) {
-	const { count = 20 } = req.query;
+	const { count = 20, branch } = req.query;
 
-	db.getPushLog(count)
+	db.getPushLog(count, branch)
 		.then(pushlog => res.json({ pushlog }))
 		.catch(reportError(res));
 }
@@ -125,9 +125,9 @@ function removePush(req, res) {
 }
 
 function getCircleBuildLog(req, res) {
-	const { count = 20 } = req.query;
+	const { count = 20, branch } = req.query;
 
-	db.getCircleBuildLog(count)
+	db.getCircleBuildLog(count, branch)
 		.then(buildlog => res.json({ buildlog }))
 		.catch(reportError(res));
 }

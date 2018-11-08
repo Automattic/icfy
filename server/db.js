@@ -249,11 +249,26 @@ exports.getPushDelta = async function(first, second) {
 	return deltaFromStats(firstStats, secondStats);
 };
 
-exports.getPushLog = count =>
-	K('pushes')
+function applyBranchFilter(query, branch) {
+	if (branch && branch !== '*') {
+		if (branch[0] === '!') {
+			query.whereNot('branch', branch.slice(1));
+		} else {
+			query.where('branch', branch);
+		}
+	}
+
+	return query;
+}
+
+exports.getPushLog = (count, branch) => {
+	const query = K('pushes')
 		.select()
 		.orderBy('id', 'desc')
 		.limit(count);
+
+	return applyBranchFilter(query, branch);
+};
 
 exports.removePush = sha =>
 	K('pushes')
@@ -269,8 +284,11 @@ exports.getCircleBuild = sha =>
 		.select()
 		.where('sha', sha);
 
-exports.getCircleBuildLog = count =>
-	K('circle_builds')
+exports.getCircleBuildLog = (count, branch) => {
+	const query = K('circle_builds')
 		.select()
 		.orderBy('build_num', 'desc')
 		.limit(count);
+
+	return applyBranchFilter(query, branch);
+};
