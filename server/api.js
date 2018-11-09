@@ -10,6 +10,7 @@ const app = express();
 app.use(cors);
 app.use(bodyParser.json());
 
+// API for frontend app
 app.get('/chunks', getChunks);
 app.get('/chart', getChart);
 app.get('/groupchart', getChunkGroupChart);
@@ -21,7 +22,10 @@ app.get('/delta', getPushDelta);
 app.get('/pushlog', getPushLog);
 app.post('/removepush', removePush);
 app.get('/buildlog', getCircleBuildLog);
+
+// API for webhooks from CircleCI
 app.post('/submit-stats', submitStats);
+app.post('/submit-stats-failed', submitStatsFailed);
 
 app.listen(port, () => console.log('API service is running on port', port));
 
@@ -132,17 +136,35 @@ function getCircleBuildLog(req, res) {
 		.catch(reportError(res));
 }
 
-function submitStats(req, res) {
+function verifyWebhookSecret( req, res ) {
 	const { secret } = req.query;
-	if (secret !== nconf.get('circle:secret')) {
-		console.log('bad secret in CircleCI webhook notification');
-		res.status(500).send('Unauthenticated');
+	if (secret === nconf.get('circle:secret')) {
+		return true;
+	}
+
+	console.log('bad secret in CircleCI webhook notification');
+	res.status(500).send('Unauthenticated');
+	return false;
+}
+
+function submitStats(req, res) {
+	if (!verifyWebhookSecret(req, res)) {
 		return;
 	}
 
-	console.log('Received CircleCI webhook notification:', req.body);
+	console.log('Received CircleCI success webhook notification:', req.body);
 	const build = req.body.payload;
 	db.insertCircleBuild(build)
 		.then(() => res.json({}))
 		.catch(reportError(res));
+}
+
+function submitStatsFailed(req, res) {
+	if (!verifyWebhookSecret(req, res)) {
+		return;
+	}
+
+	// Just an empty stub for now
+	console.log('Received CircleCI failure webhook notification:', req.body);
+	res.json({});
 }
