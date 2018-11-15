@@ -1,3 +1,4 @@
+const _ = require('lodash');
 const { log, sleep } = require('./utils');
 const { getRepoEvents } = require('./github');
 const db = require('./db');
@@ -14,7 +15,7 @@ function toPush(response) {
 		sha: response.payload.head,
 		created_at: response.created_at,
 		author: response.actor.login,
-		message: response.payload.commits[0].message.split('\n')[0],
+		message: _.first(_.last(response.payload.commits).message.split('\n')),
 		branch: response.payload.ref.replace(/^refs\/heads\//, ''),
 	};
 }
