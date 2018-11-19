@@ -96,6 +96,10 @@ class BuildLogView extends React.Component {
 		return <a href={`https://circleci.com/gh/Automattic/wp-calypso/${buildNum}`}>{buildNum}</a>;
 	}
 
+	renderSuccess(success) {
+		return success ? '👍' : '🔴';
+	}
+
 	renderBuildLog() {
 		const { buildlog } = this.state;
 
@@ -103,11 +107,12 @@ class BuildLogView extends React.Component {
 			return 'Loading…';
 		}
 
-		const header = ['branch', 'sha', 'circleci build'];
+		const header = ['build_num', 'success', 'branch', 'sha'];
 		const rows = buildlog.map(build => [
+			this.renderCircleBuild(build.build_num),
+			this.renderSuccess(build.success),
 			build.branch,
 			this.renderSha(build.sha),
-			this.renderCircleBuild(build.build_num),
 		]);
 
 		return <Table header={header} rows={rows} />;
