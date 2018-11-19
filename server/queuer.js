@@ -4,7 +4,6 @@ const { getRepoEvents } = require('./github');
 const db = require('./db');
 
 const REPO = 'Automattic/wp-calypso';
-const BRANCH = 'refs/heads/master';
 
 function printPush(push) {
 	return `${push.sha} in ${push.branch} at ${push.created_at} by ${push.author}: ${push.message}`;
