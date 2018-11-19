@@ -13,6 +13,7 @@ async function processQueue() {
 	while (true) {
 		let skippedSomeBuild = false;
 		const pushes = await db.getQueuedPushes();
+		log(`Processing build queue of ${pushes.length} pushes`);
 		for (const push of pushes) {
 			const result = await builder.processPush(push);
 
@@ -28,6 +29,7 @@ async function processQueue() {
 
 			await db.markPushAsProcessed(push.sha);
 		}
+		log(`Finished processing build queue of ${pushes.length} pushes`);
 
 		if (skippedSomeBuild || pushes.length === 0) {
 			// wait a minute before querying for pushes again

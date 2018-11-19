@@ -136,7 +136,7 @@ function getCircleBuildLog(req, res) {
 		.catch(reportError(res));
 }
 
-function verifyWebhookSecret( req, res ) {
+function verifyWebhookSecret(req, res) {
 	const { secret } = req.query;
 	if (secret === nconf.get('circle:secret')) {
 		return true;
@@ -153,7 +153,7 @@ function submitStats(req, res) {
 	}
 
 	console.log('Received CircleCI success webhook notification:', req.body);
-	const build = req.body.payload;
+	const build = { ...req.body.payload, success: true };
 	db.insertCircleBuild(build)
 		.then(() => res.json({}))
 		.catch(reportError(res));
@@ -164,7 +164,9 @@ function submitStatsFailed(req, res) {
 		return;
 	}
 
-	// Just an empty stub for now
 	console.log('Received CircleCI failure webhook notification:', req.body);
-	res.json({});
+	const build = { ...req.body.payload, success: false };
+	db.insertCircleBuild(build)
+		.then(() => res.json({}))
+		.catch(reportError(res));
 }

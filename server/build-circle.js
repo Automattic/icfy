@@ -27,12 +27,13 @@ async function downloadArtifact(url) {
 }
 
 exports.processPush = async function(push) {
-	const [circleBuild] = await db.getCircleBuild(push.sha);
-	if (!circleBuild) {
+	const circleBuilds = await db.getCircleBuilds(push.sha);
+	const lastSuccessfulCircleBuild = _.findLast(circleBuilds, {success: true});
+	if (!lastSuccessfulCircleBuild) {
 		return null;
 	}
 
-	const { ancestor, build_num } = circleBuild;
+	const { ancestor, build_num } = lastSuccessfulCircleBuild;
 
 	// download the list of artifacts
 	const artifacts = await downloadArtifactList(build_num);

@@ -279,7 +279,7 @@ exports.removePush = sha =>
 
 exports.insertCircleBuild = build => K('circle_builds').insert(build);
 
-exports.getCircleBuild = sha =>
+exports.getCircleBuilds = sha =>
 	K('circle_builds')
 		.select()
 		.where('sha', sha);
