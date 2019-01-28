@@ -12,6 +12,7 @@ app.use(bodyParser.json());
 
 // API for frontend app
 app.get('/chunks', getChunks);
+app.get('/chunkgroups', getChunkGroups);
 app.get('/chart', getChart);
 app.get('/groupchart', getChunkGroupChart);
 app.get('/push', getPush);
@@ -44,6 +45,12 @@ const reportError = res => error => {
 function getChunks(req, res) {
 	db.getKnownChunks()
 		.then(chunks => res.json({ chunks }))
+		.catch(reportError(res));
+}
+
+function getChunkGroups(req, res) {
+	db.getKnownChunkGroups()
+		.then(chunkGroups => res.json({ chunkGroups }))
 		.catch(reportError(res));
 }
 

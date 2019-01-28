@@ -6,6 +6,42 @@ const { deltaFromStats } = require('./delta');
 
 const K = knex(config);
 
+// find the SHA of last processed master push
+async function getLastMasterPushSha() {
+	const lastPushArr = await K('pushes')
+		.select('sha')
+		.where({ branch: 'master', processed: true })
+		.orderBy('created_at', 'desc')
+		.limit(1);
+
+	if (lastPushArr.length === 0) {
+		throw new Error('last processed master push not found');
+	}
+
+	return lastPushArr[0].sha;
+}
+
+exports.getKnownChunks = async function() {
+	const lastPushSha = await getLastMasterPushSha();
+
+	const lastPushChunks = await K.select()
+		.distinct('chunk')
+		.from('stats')
+		.where('sha', lastPushSha);
+
+	return lastPushChunks.map(row => row.chunk);
+};
+
+exports.getKnownChunkGroups = async function() {
+	const lastPushSha = await getLastMasterPushSha();
+
+	const lastPushChunkGroups = await K.select()
+		.distinct('chunk')
+		.from('chunk_groups')
+		.where('sha', lastPushSha);
+
+	return lastPushChunkGroups.map(row => row.chunk);
+};
 exports.getPush = sha =>
 	K('pushes')
 		.select()
@@ -44,27 +80,6 @@ exports.setPushAncestor = (sha, ancestorSha) =>
 exports.insertChunkStats = stats => K('stats').insert(stats);
 
 exports.insertChunkGroups = chunkGroups => K('chunk_groups').insert(chunkGroups);
-
-exports.getKnownChunks = async function() {
-	// find the SHA of last processed master push
-	const lastPushArr = await K('pushes')
-		.select('sha')
-		.where({ branch: 'master', processed: true })
-		.orderBy('created_at', 'desc')
-		.limit(1);
-
-	if (lastPushArr.length === 0) {
-		throw new Error('last processed master push not found');
-	}
-
-	const lastPushSha = lastPushArr[0].sha;
-	const lastPushStats = await K.select()
-		.distinct('chunk')
-		.from('stats')
-		.where('sha', lastPushSha);
-
-	return lastPushStats.map(row => row.chunk);
-};
 
 function periodToLastCount(period) {
 	let lastCount = 200;
@@ -183,13 +198,13 @@ exports.getChunkGroupChartData = async (period, chunks, loadedChunks, branch = '
 	const shas = _.map(pushes, 'sha');
 
 	/*
-	* Accumulate a flat list of all of the chunks explicitly called out to load (per sha)
-	* We can't sum this for the totals just yet because need to also get all of the the chunks'
-	* siblings per sha.
-	*
-	* If chunks are always their own siblings we can skip this step
-	* and just get the past N shas.
-	*/
+	 * Accumulate a flat list of all of the chunks explicitly called out to load (per sha)
+	 * We can't sum this for the totals just yet because need to also get all of the the chunks'
+	 * siblings per sha.
+	 *
+	 * If chunks are always their own siblings we can skip this step
+	 * and just get the past N shas.
+	 */
 
 	// Sizes of the requested chunks themselves
 	const chunkSizes = await timed(getChunkSizes(shas, chunks), 'getChunkSizes');
