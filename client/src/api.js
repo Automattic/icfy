@@ -27,6 +27,8 @@ export const getChunkGroupChartData = (chunks, loadedChunks, period, branch) => 
 
 export const getChunkList = () => get(`${apiURL}/chunks`);
 
+export const getChunkGroupList = () => get(`${apiURL}/chunkgroups`);
+
 export const getPush = sha => get(`${apiURL}/push?sha=${sha}`);
 
 export const getPushes = branch => get(`${apiURL}/pushes?branch=${branch}`);

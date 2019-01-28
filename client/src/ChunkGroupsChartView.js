@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { getChunkGroupChartData, getChunkList, getBranches } from './api';
+import { getChunkGroupChartData, getChunkGroupList, getBranches } from './api';
 import Masterbar from './Masterbar';
 import Chart from './Chart';
 import PushDetails from './PushDetails';
@@ -25,7 +25,7 @@ class ChunkGroupsChartView extends React.Component {
 		const selectedBranch = searchParams.get('branch') || 'master';
 
 		this.state = {
-			chunks: null,
+			chunkGroups: null,
 			givenChunkGroups: [],
 			toLoadChunkGroups: ['build', 'reader'],
 			selectedSize: 'gzip_size',
@@ -40,7 +40,7 @@ class ChunkGroupsChartView extends React.Component {
 	}
 
 	componentDidMount() {
-		this.loadChunks();
+		this.loadChunkGroups();
 		this.loadBranches();
 		this.loadChart();
 	}
@@ -68,11 +68,10 @@ class ChunkGroupsChartView extends React.Component {
 		this.setState({ selectedBranch, chartData: null, currentPushSha: null }, this.loadChart);
 	};
 
-	loadChunks() {
-		getChunkList().then(response => {
-			const { chunks } = response.data;
-			this.setState({ chunks });
-		});
+	async loadChunkGroups() {
+		const response = await getChunkGroupList();
+		const { chunkGroups } = response.data;
+		this.setState({ chunkGroups });
 	}
 
 	async loadChart() {
@@ -129,7 +128,7 @@ class ChunkGroupsChartView extends React.Component {
 	}
 
 	render() {
-		const toLoadOptions = _.without(this.state.chunks, ...this.state.givenChunkGroups);
+		const toLoadOptions = _.without(this.state.chunkGroups, ...this.state.givenChunkGroups);
 		const { selectedBranch, branchList } = this.state;
 
 		return (
@@ -145,7 +144,7 @@ class ChunkGroupsChartView extends React.Component {
 						<ChunkList
 							value={this.state.givenChunkGroups}
 							onChange={this.setGivenChunkGroups}
-							options={this.state.chunks}
+							options={this.state.chunkGroups}
 						/>
 					</div>
 					<div style={{ paddingBottom: 10 }}>
