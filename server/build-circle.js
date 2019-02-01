@@ -1,3 +1,4 @@
+const _ = require('lodash');
 const { get } = require('axios');
 const { log, timed } = require('./utils');
 const db = require('./db');
@@ -28,7 +29,7 @@ async function downloadArtifact(url) {
 
 exports.processPush = async function(push) {
 	const circleBuilds = await db.getCircleBuilds(push.sha);
-	const lastSuccessfulCircleBuild = _.findLast(circleBuilds, {success: true});
+	const lastSuccessfulCircleBuild = _.findLast(circleBuilds, 'success');
 	if (!lastSuccessfulCircleBuild) {
 		return null;
 	}
