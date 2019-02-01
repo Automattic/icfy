@@ -18,10 +18,17 @@ function analyzeBundle(sha, stats, chart) {
 
 	const chunkNames = _.fromPairs(_.map(stats.chunks, chunk => [chunk.id, chunk.names]));
 
-	const getName = id => _.get(chunkNames, [ id, 0 ], id);
+	const getName = id => _.get(chunkNames, [id, 0], id);
 
 	let chunkGroups;
-	if (webpackMajorVersion >= 4) {
+	if (webpackMajorVersion < 4) {
+		// support for webpack < 4
+		chunkGroups = [
+			{ sha, chunk: 'build', sibling: 'manifest' },
+			{ sha, chunk: 'build', sibling: 'vendor' },
+		];
+	} else if (!stats.namedChunkGroups) {
+		// old stats.json files that don't have `namedChunkGroups` yet
 		chunkGroups = _.flatMap(stats.chunks, chunk =>
 			chunk.siblings.map(sibling => ({
 				sha,
@@ -30,11 +37,13 @@ function analyzeBundle(sha, stats, chart) {
 			}))
 		);
 	} else {
-		// support for webpack < 4
-		chunkGroups = [
-			{ sha, chunk: 'build', sibling: 'manifest' },
-			{ sha, chunk: 'build', sibling: 'vendor' },
-		];
+		chunkGroups = _.flatMap(stats.namedChunkGroups, ({ chunks }, groupName) =>
+			chunks.map(chunk => ({
+				sha,
+				chunk: groupName,
+				sibling: getName(chunk),
+			}))
+		);
 	}
 
 	return { sha, chunkStats, chunkGroups, chunkNames };
