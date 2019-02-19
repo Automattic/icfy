@@ -11,15 +11,22 @@ function recordBundleStats({ sha, chunkStats, chunkGroups }) {
 
 async function processQueue() {
 	while (true) {
-		let skippedSomeBuild = false;
 		const pushes = await db.getQueuedPushes();
+
 		log(`Processing build queue of ${pushes.length} pushes`);
 		for (const push of pushes) {
 			const result = await builder.processPush(push);
 
 			if (!result) {
-				log(`Push ${push.sha} was not processed, will try again in a while`);
-				skippedSomeBuild = true;
+				const age = ((Date.now() - push.created_at) / (1000 * 60 * 60)).toFixed(1);
+
+				log(`Push ${push.sha} in ${push.branch} at ${push.created_at.toISOString()} not processed`);
+
+				if (push.branch !== 'master' && age > 24) {
+					log(`Removing push ${push.sha} because it's older than 24 hours (${age}h)`);
+					await db.removePush(push.sha);
+				}
+
 				continue;
 			}
 
@@ -31,10 +38,8 @@ async function processQueue() {
 		}
 		log(`Finished processing build queue of ${pushes.length} pushes`);
 
-		if (skippedSomeBuild || pushes.length === 0) {
-			// wait a minute before querying for pushes again
-			await sleep(60000);
-		}
+		// wait a minute before querying for pushes again
+		await sleep(60000);
 	}
 }
 
