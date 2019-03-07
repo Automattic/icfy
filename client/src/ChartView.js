@@ -16,6 +16,26 @@ const PERIODS = [
 	{ value: 'last1600', name: 'last 1600 pushes' },
 ];
 
+function fillChartData(data, length) {
+	const missing = length - data.length;
+	if (missing > 0) {
+		return [...Array(missing).fill(data[0]), ...data];
+	}
+	return data;
+}
+
+function mergeChartData(data, selectedSize) {
+	const maxLength = data.reduce((max, chunkData) => {
+		const length = chunkData.data.length;
+		return length > max ? length : max;
+	}, 0);
+
+	return data.map(chunkData => {
+		const data = fillChartData(chunkData.data.map(d => d[selectedSize]), maxLength);
+		return [chunkData.chunk, ...data];
+	});
+}
+
 class ChartView extends React.Component {
 	constructor(props) {
 		super(props);
@@ -90,10 +110,7 @@ class ChartView extends React.Component {
 		const { data } = this.state;
 		this.setState({
 			selectedSize,
-			chartData: data.map(chunkData => [
-				chunkData.chunk,
-				...chunkData.data.map(d => d[selectedSize]),
-			]),
+			chartData: mergeChartData(data, selectedSize),
 		});
 	}
 
@@ -101,10 +118,7 @@ class ChartView extends React.Component {
 		const { selectedSize } = this.state;
 		this.setState({
 			data,
-			chartData: data.map(chunkData => [
-				chunkData.chunk,
-				...chunkData.data.map(d => d[selectedSize]),
-			]),
+			chartData: mergeChartData(data, selectedSize),
 		});
 	}
 
@@ -132,7 +146,7 @@ class ChartView extends React.Component {
 							onChange={this.changePeriod}
 							options={PERIODS}
 						/>
-						in <b>{ this.state.selectedBranch }</b> (choose <Link to="/branch">another branch</Link>)
+						in <b>{this.state.selectedBranch}</b> (choose <Link to="/branch">another branch</Link>)
 					</p>
 					{this.state.chartData && (
 						<Chart chartData={this.state.chartData} onMouseOver={this.showPush} />
