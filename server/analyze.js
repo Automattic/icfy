@@ -1,6 +1,6 @@
 const _ = require('lodash');
 
-function analyzeBundle(sha, stats, chart) {
+function analyzeBundle(sha, stats, chart, styleStats) {
 	const chunkStats = chart.map(asset => {
 		const [chunk, hash] = asset.label.split('.');
 
@@ -13,6 +13,17 @@ function analyzeBundle(sha, stats, chart) {
 			gzip_size: asset.gzipSize,
 		};
 	});
+
+	if (styleStats) {
+		chunkStats.push({
+			sha,
+			chunk: 'style.css',
+			hash: styleStats.hash,
+			stat_size: styleStats.statSize,
+			parsed_size: styleStats.parsedSize,
+			gzip_size: styleStats.gzipSize,
+		});
+	}
 
 	const webpackMajorVersion = parseInt(stats.version, 10);
 
