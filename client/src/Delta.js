@@ -30,6 +30,18 @@ const getPercentText = (d, size) => {
 	return '';
 };
 
+function getTotalDelta(deltas) {
+	let result = {};
+
+	for (const d of deltas) {
+		for (const size of sizes) {
+			result[size] = (result[size] || 0) + d.deltaSizes[size];
+		}
+	}
+
+	return result;
+}
+
 function printDeltaTable(deltas) {
 	const sizeHeaders = [];
 	for (const size of sizes) {
@@ -52,6 +64,18 @@ function printDeltaTable(deltas) {
 
 		tableData.push(chunkColumns);
 	}
+
+	const totals = getTotalDelta(deltas);
+	const totalColumns = ['Total'];
+	for (const size of sizes) {
+		totalColumns.push(addSignAndBytes(totals[size]));
+		totalColumns.push('');
+	}
+
+	// Empty row.
+	tableData.push([]);
+	// Totals row.
+	tableData.push(totalColumns);
 
 	return table(tableData, { align: ['l', 'r', 'r', 'r', 'r', 'r', 'r'] });
 }
