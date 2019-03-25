@@ -59,7 +59,7 @@ class ChartView extends React.Component {
 			selectedSize,
 			selectedPeriod,
 			selectedBranch,
-			data: null,
+			chunkData: null,
 			chartData: null,
 			currentPushSha: null,
 			currentPrevPushSha: null,
@@ -93,8 +93,8 @@ class ChartView extends React.Component {
 	showPush = pushIndex => {
 		// find the longest data array, in case they have unequal length
 		// (e.g., some chunk doesn't have the complete dataset because it's new)
-		const longestData = this.state.data.reduce((longest, data) =>
-			data.data.length > longest.data.length ? data : longest
+		const longestData = this.state.chunkData.reduce((longest, chunkData) =>
+			chunkData.data.length > longest.data.length ? chunkData : longest
 		);
 		const pushToLoad = longestData.data[pushIndex];
 		const prevPush = pushIndex > 0 ? longestData.data[pushIndex - 1] : null;
@@ -117,8 +117,8 @@ class ChartView extends React.Component {
 			const response = await getChartData(chunk, selectedPeriod, selectedBranch);
 			return { chunk, data: response.data.data };
 		});
-		const data = await Promise.all(requests);
-		this.setData(data);
+		const chunkData = await Promise.all(requests);
+		this.setChunkData(chunkData);
 	}
 
 	updateSearchQuery() {
@@ -140,13 +140,13 @@ class ChartView extends React.Component {
 	}
 
 	setSize(selectedSize) {
-		const chartData = mergeChartData(this.state.data, selectedSize);
+		const chartData = mergeChartData(this.state.chunkData, selectedSize);
 		this.setState({ selectedSize, chartData });
 	}
 
-	setData(data) {
-		const chartData = mergeChartData(data, this.state.selectedSize);
-		this.setState({ data, chartData });
+	setChunkData(chunkData) {
+		const chartData = mergeChartData(chunkData, this.state.selectedSize);
+		this.setState({ chunkData, chartData });
 	}
 
 	render() {
