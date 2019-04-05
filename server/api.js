@@ -16,7 +16,6 @@ app.get('/chunkgroups', getChunkGroups);
 app.get('/chart', getChart);
 app.get('/groupchart', getChunkGroupChart);
 app.get('/push', getPush);
-app.post('/push', insertPush);
 app.get('/pushes', getPushes);
 app.get('/pushstats', getPushStats);
 app.get('/delta', getPushDelta);
@@ -75,23 +74,6 @@ function getPush(req, res) {
 
 	db.getPush(sha)
 		.then(([push = null]) => res.json({ push }))
-		.catch(reportError(res));
-}
-
-function insertPush(req, res) {
-	const push = req.body;
-
-	if (!push) {
-		res.status(500).json({ error: 'Missing POST body' });
-	}
-
-	if (!push.branch || push.branch === 'master') {
-		res.status(500).json({ error: 'Invalid branch' });
-		return;
-	}
-
-	db.insertPush(push)
-		.then(() => res.json({}))
 		.catch(reportError(res));
 }
 
