@@ -79,8 +79,12 @@ async function pollForNewPushes() {
 			const newPushes = await findNewPushesSince(lastPush);
 
 			for (const push of newPushes) {
-				await db.insertPush(push);
-				log(`Queued new push: ${printPush(push)}`);
+				const inserted = await db.insertPush(push);
+				if (inserted) {
+					log(`Queued new push: ${printPush(push)}`);
+				} else {
+					log(`Push with the same SHA already present: ${printPush(push)}`);
+				}
 			}
 
 			log(`Queued ${newPushes.length} new pushes`);

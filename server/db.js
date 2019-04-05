@@ -47,7 +47,19 @@ exports.getPush = sha =>
 		.select()
 		.where('sha', sha);
 
-exports.insertPush = push => K('pushes').insert(push);
+exports.insertPush = async push => {
+	const [existingPush] = await K('pushes')
+		.select()
+		.where('sha', push.sha);
+
+	if (existingPush) {
+		return false;
+	}
+
+	await K('pushes').insert(push);
+
+	return true;
+};
 
 exports.getLastPush = () =>
 	K('pushes')
