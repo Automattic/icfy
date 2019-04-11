@@ -61,12 +61,6 @@ exports.insertPush = async push => {
 	return true;
 };
 
-exports.getLastPush = () =>
-	K('pushes')
-		.select()
-		.orderBy('id', 'desc')
-		.limit(1);
-
 exports.getPushesForBranch = branch =>
 	K('pushes')
 		.select()

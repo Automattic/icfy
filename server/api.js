@@ -27,6 +27,9 @@ app.get('/buildlog', getCircleBuildLog);
 app.post('/submit-stats', submitStats);
 app.post('/submit-stats-failed', submitStatsFailed);
 
+// API for webhooks from GitHub
+app.post('/hooks-github', githubWebhook);
+
 app.listen(port, () => console.log('API service is running on port', port));
 
 function cors(req, res, next) {
@@ -158,4 +161,57 @@ function submitStatsFailed(req, res) {
 	db.insertCircleBuild(build)
 		.then(() => res.json({}))
 		.catch(reportError(res));
+}
+
+function printPush(push) {
+	return `${push.sha} in ${push.branch} at ${push.created_at} by ${push.author}: ${push.message}`;
+}
+
+function fromPR(body) {
+	return {
+		sha: body.pull_request.head.sha,
+		branch: body.pull_request.head.ref,
+		message: `${body.pull_request.title} (#${body.pull_request.number})`,
+		author: body.sender.login,
+		created_at: body.pull_request.updated_at,
+		ancestor: body.pull_request.base.sha,
+	};
+}
+
+function fromPush(body) {
+	return {
+		sha: body.head_commit.id,
+		branch: body.ref.replace(/^refs\/heads\//, ''),
+		message: _.first(body.head_commit.message.split('\n')),
+		author: body.pusher.name,
+		created_at: body.head_commit.timestamp,
+	};
+}
+
+async function queuePush(push) {
+	const inserted = await db.insertPush(push);
+	if (inserted) {
+		console.log(`Queued new push: ${printPush(push)}`);
+	} else {
+		console.log(`Push with the same SHA already present: ${printPush(push)}`);
+	}
+}
+
+async function githubWebhook(req, res) {
+	const type = req.get('X-GitHub-Event');
+	const body = req.body;
+
+	// PR created or updated
+	if (type === 'pull_request' && (body.action === 'opened' || body.action === 'synchronize')) {
+		console.log('Received GitHub webhook:', type, body.action);
+		await queuePush(fromPR(body));
+	}
+
+	// push to master
+	if (type === 'push' && body.ref === 'refs/heads/master' && body.head_commit) {
+		console.log('Received GitHub webhook:', type);
+		await queuePush(fromPush(body));
+	}
+
+	res.json({});
 }
