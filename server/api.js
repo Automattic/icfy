@@ -167,14 +167,17 @@ function printPush(push) {
 	return `${push.sha} in ${push.branch} at ${push.created_at} by ${push.author}: ${push.message}`;
 }
 
+function toUTC(date) {
+	return new Date(date).toISOString();
+}
+
 function fromPR(body) {
 	return {
 		sha: body.pull_request.head.sha,
 		branch: body.pull_request.head.ref,
 		message: `${body.pull_request.title} (#${body.pull_request.number})`,
 		author: body.sender.login,
-		created_at: body.pull_request.updated_at,
-		ancestor: body.pull_request.base.sha,
+		created_at: toUTC(body.pull_request.updated_at),
 	};
 }
 
@@ -184,7 +187,7 @@ function fromPush(body) {
 		branch: body.ref.replace(/^refs\/heads\//, ''),
 		message: _.first(body.head_commit.message.split('\n')),
 		author: body.pusher.name,
-		created_at: body.head_commit.timestamp,
+		created_at: toUTC(body.head_commit.timestamp),
 	};
 }
 
