@@ -15,11 +15,11 @@ const formatPercent = p => {
 };
 
 const getPercentText = (d, size) => {
-	if (!d.firstHash) {
+	if (!d.firstSizes) {
 		return '(new)';
 	}
 
-	if (!d.secondHash) {
+	if (!d.secondSizes) {
 		return '(deleted)';
 	}
 
@@ -42,6 +42,17 @@ function getTotalDelta(deltas) {
 	return result;
 }
 
+function trimName(name, chars) {
+	if (name.length > chars) {
+		return name.slice(0, chars - 3) + '...';
+	}
+	return name;
+}
+
+function filterTinyChanges(deltas) {
+	return deltas.filter((delta, i) => i < 10 || Math.abs(delta.deltaSizes.parsed_size) > 10);
+}
+
 function printDeltaTable(deltas) {
 	const sizeHeaders = [];
 	for (const size of sizes) {
@@ -52,11 +63,13 @@ function printDeltaTable(deltas) {
 
 	const tableData = [
 		// header columns
-		['chunk', ...sizeHeaders],
+		['name', ...sizeHeaders],
 	];
 
-	for (const d of deltas) {
-		const chunkColumns = [d.chunk];
+	const relevantDeltas = filterTinyChanges(deltas);
+
+	for (const d of relevantDeltas) {
+		const chunkColumns = [trimName(d.name, 80)];
 		for (const size of sizes) {
 			chunkColumns.push(addSignAndBytes(d.deltaSizes[size]));
 			chunkColumns.push(getPercentText(d, size));
@@ -77,24 +90,38 @@ function printDeltaTable(deltas) {
 	// Totals row.
 	tableData.push(totalColumns);
 
+	const hiddenDeltas = deltas.length - relevantDeltas.length;
+	if (hiddenDeltas > 0) {
+		tableData.push([]);
+		tableData.push([`(${hiddenDeltas} rows with tiny changes were hidden)`]);
+	}
+
 	return table(tableData, { align: ['l', 'r', 'r', 'r', 'r', 'r', 'r'] });
 }
 
-const Delta = ({ delta }) => {
-	let content;
+const DeltaTable = ({ delta }) => {
 	if (!delta) {
-		content = '...';
+		return '...';
 	} else if (delta.length === 0) {
-		content = 'no changes in production JS';
+		return 'no changes in production JS';
 	} else {
-		content = <div className="text-table">{printDeltaTable(delta)}</div>;
+		return <div className="text-table">{printDeltaTable(delta)}</div>;
 	}
+};
+
+const Delta = ({ delta, type }) => {
+	if (!delta) {
+		return <div className="push">...</div>;
+	}
+
+	const title = type === 'groups' ? 'Chunk Groups Delta:' : 'Chunks Delta:';
+	const data = type === 'groups' ? delta.groups : delta.chunks;
 
 	return (
 		<div className="push">
-			<b>Delta:</b>
+			<b>{title}</b>
 			<br />
-			{content}
+			<DeltaTable delta={data} />
 		</div>
 	);
 };

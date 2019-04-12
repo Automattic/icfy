@@ -8,13 +8,12 @@ const PushView = props => {
 	const { params } = props.match;
 	const sha = params.sha || searchParams.get('sha');
 	const prevSha = params.prevSha || searchParams.get('prevSha');
-	const size = searchParams.get('size') || 'gzip_size';
 
 	return (
 		<div className="layout">
 			<Masterbar />
 			<div className="content">
-				<PushDetails sha={sha} prevSha={prevSha} size={size}/>
+				<PushDetails sha={sha} prevSha={prevSha} deltaType="groups"/>
 			</div>
 		</div>
 	);

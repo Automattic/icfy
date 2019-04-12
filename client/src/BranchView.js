@@ -88,7 +88,7 @@ class BranchView extends React.Component {
 
 		if (lastPush && lastPush.processed) {
 			const deltaResponse = await getDelta(lastPush.ancestor, lastPush.sha);
-			this.setState({ selectedBranchLastDelta: deltaResponse.data.delta });
+			this.setState({ selectedBranchLastDelta: deltaResponse.data });
 		}
 	}
 
@@ -99,7 +99,8 @@ class BranchView extends React.Component {
 			selectedBranch,
 			selectedBranchHead: null,
 			selectedBranchPushes: null,
-			selectedBranchDelta: null,
+			selectedBranchLastPush: null,
+			selectedBranchLastDelta: null,
 		});
 		this.loadBranchHead(selectedBranch);
 	};

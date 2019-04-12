@@ -64,7 +64,7 @@ class PushDetails extends React.Component {
 			return;
 		}
 
-		this.setState({ delta: deltaResponse.data.delta });
+		this.setState({ delta: deltaResponse.data });
 	}
 
 	render() {
@@ -80,7 +80,7 @@ class PushDetails extends React.Component {
 				<b>Commit:</b> <PushLink sha={sha} prevSha={prevSha} /> <GitHubLink sha={sha} />
 				<br />
 				<Push push={push} />
-				<Delta delta={delta} />
+				<Delta type={this.props.deltaType} delta={delta} />
 			</div>
 		);
 	}

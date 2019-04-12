@@ -181,6 +181,7 @@ class ChunkGroupsChartView extends React.Component {
 						<PushDetails
 							sha={this.state.currentPushSha}
 							prevSha={this.state.currentPrevPushSha}
+							deltaType="groups"
 							debounceDelay={500}
 						/>
 					)}
