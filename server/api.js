@@ -202,17 +202,18 @@ async function queuePush(push) {
 
 async function githubWebhook(req, res) {
 	const type = req.get('X-GitHub-Event');
+	const id = req.get('X-GitHub-Delivery');
 	const body = req.body;
 
 	// PR created or updated
 	if (type === 'pull_request' && (body.action === 'opened' || body.action === 'synchronize')) {
-		console.log('Received GitHub webhook:', type, body.action);
+		console.log('Received GitHub webhook:', id, type, body.action);
 		await queuePush(fromPR(body));
 	}
 
 	// push to master
 	if (type === 'push' && body.ref === 'refs/heads/master' && body.head_commit) {
-		console.log('Received GitHub webhook:', type);
+		console.log('Received GitHub webhook:', id, type);
 		await queuePush(fromPush(body));
 	}
 
