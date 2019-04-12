@@ -2,7 +2,7 @@ const _ = require('lodash');
 const knex = require('knex');
 const config = require('./knexfile');
 const { timed } = require('./utils');
-const { deltaFromStats } = require('./delta');
+const { deltaFromStats, deltaFromStatsAndGroups } = require('./delta');
 
 const K = knex(config);
 
@@ -265,9 +265,25 @@ const getPushStats = sha =>
 
 exports.getPushStats = getPushStats;
 
-exports.getPushDelta = async function(first, second) {
-	const [firstStats, secondStats] = await Promise.all([first, second].map(getPushStats));
-	return deltaFromStats(firstStats, secondStats);
+const getPushGroups = sha =>
+	K('chunk_groups')
+		.select(['chunk', 'sibling'])
+		.where('sha', sha);
+
+exports.getPushDelta = function(first, second) {
+	// stats for first, second
+	const statsRequest = Promise.all([getPushStats(first), getPushStats(second)]);
+	const groupsRequest = Promise.all([getPushGroups(first), getPushGroups(second)]);
+
+	const chunksDelta = statsRequest.then(([firstStats, secondStats]) =>
+		deltaFromStats(firstStats, secondStats)
+	);
+	const groupsDelta = Promise.all([statsRequest, groupsRequest]).then(
+		([[firstStats, secondStats], [firstGroups, secondGroups]]) =>
+			deltaFromStatsAndGroups(firstStats, firstGroups, secondStats, secondGroups)
+	);
+
+	return Promise.all([chunksDelta, groupsDelta]).then(([chunks, groups]) => ({ chunks, groups }));
 };
 
 function applyBranchFilter(query, branch) {

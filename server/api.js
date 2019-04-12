@@ -100,7 +100,7 @@ function getPushDelta(req, res) {
 	const { first, second } = req.query;
 
 	db.getPushDelta(first, second)
-		.then(delta => res.json({ delta }))
+		.then(delta => res.json(delta))
 		.catch(reportError(res));
 }
 

@@ -6,6 +6,18 @@ function sizesOf(stat) {
 	return stat ? _.pick(stat, sizes) : null;
 }
 
+function sumSizesOf(firstSizes, secondSizes) {
+	if (!firstSizes) {
+		return secondSizes;
+	}
+
+	if (!secondSizes) {
+		return firstSizes;
+	}
+
+	return _.fromPairs(sizes.map(size => [size, firstSizes[size] + secondSizes[size]]));
+}
+
 function deltaSizesOf(firstSizes, secondSizes) {
 	if (!firstSizes) {
 		// new chunk, the delta is the full size of the second version
@@ -31,8 +43,41 @@ function deltaPercentsOf(firstSizes, deltaSizes) {
 			return null;
 		}
 
-		return deltaSizes[type] / firstSize * 100;
+		return (deltaSizes[type] / firstSize) * 100;
 	});
+}
+
+function groupGroups(groups) {
+	const grouped = {};
+	for (const record of groups) {
+		const group = record.chunk;
+		const chunk = record.sibling;
+
+		// skip moment-locale-xx-js chunk groups with buggy names
+		if (/^moment-locale-.*-js$/.test(group)) {
+			continue;
+		}
+
+		if (!grouped[group]) {
+			grouped[group] = [group]; // every group has the same-named chunk as member
+		}
+		if (!grouped[group].includes(chunk)) {
+			grouped[group].push(chunk);
+		}
+	}
+	return _.map(grouped, (chunks, group) => ({ group, chunks }));
+}
+
+function sizesOfGroup(group, stats) {
+	if (!group) {
+		return null;
+	}
+
+	return group.chunks.map(chunk => sizesOf(_.find(stats, { chunk }))).reduce(sumSizesOf);
+}
+
+function sortByDelta(deltas) {
+	return _.reverse(_.sortBy(deltas, delta => Math.abs(delta.deltaSizes.parsed_size)));
 }
 
 function deltaFromStats(firstStats, secondStats) {
@@ -51,7 +96,7 @@ function deltaFromStats(firstStats, secondStats) {
 
 		if (_.some(deltaSizes, size => size !== 0)) {
 			deltas.push({
-				chunk,
+				name: chunk,
 				firstHash,
 				firstSizes,
 				secondHash,
@@ -69,7 +114,7 @@ function deltaFromStats(firstStats, secondStats) {
 			const deltaSizes = deltaSizesOf(firstSizes, secondSizes);
 
 			deltas.push({
-				chunk: secondStat.chunk,
+				name: secondStat.chunk,
 				firstHash: null,
 				firstSizes,
 				secondHash: secondStat.hash,
@@ -79,7 +124,52 @@ function deltaFromStats(firstStats, secondStats) {
 		}
 	}
 
-	return deltas;
+	return sortByDelta(deltas);
+}
+
+function deltaFromStatsAndGroups(firstStats, firstGroups, secondStats, secondGroups) {
+	firstGroups = groupGroups(firstGroups);
+	secondGroups = groupGroups(secondGroups);
+
+	const deltas = [];
+
+	for (const firstGroup of firstGroups) {
+		const group = firstGroup.group;
+		const secondGroup = _.find(secondGroups, { group });
+		const firstSizes = sizesOfGroup(firstGroup, firstStats);
+		const secondSizes = sizesOfGroup(secondGroup, secondStats);
+		const deltaSizes = deltaSizesOf(firstSizes, secondSizes);
+		const deltaPercents = deltaPercentsOf(firstSizes, deltaSizes);
+
+		if (_.some(deltaSizes, size => size !== 0)) {
+			deltas.push({
+				name: group,
+				firstSizes,
+				secondSizes,
+				deltaSizes,
+				deltaPercents,
+			});
+		}
+	}
+
+	for (const secondGroup of secondGroups) {
+		const group = secondGroup.group;
+		if (!_.find(firstGroups, { group })) {
+			const firstSizes = null;
+			const secondSizes = sizesOfGroup(secondGroup, secondStats);
+			const deltaSizes = deltaSizesOf(firstSizes, secondSizes);
+
+			deltas.push({
+				name: group,
+				firstSizes,
+				secondSizes,
+				deltaSizes,
+			});
+		}
+	}
+
+	return sortByDelta(deltas);
 }
 
 exports.deltaFromStats = deltaFromStats;
+exports.deltaFromStatsAndGroups = deltaFromStatsAndGroups;
