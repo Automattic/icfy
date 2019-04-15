@@ -1,7 +1,16 @@
-const { get } = require('axios');
+const nconf = require('nconf');
+const axios = require('axios');
 
 const repoUrl = repoSlug => `https://api.github.com/repos/${repoSlug}`;
+const authHeaders = () => ({ headers: { Authorization: `token ${nconf.get('github:token')}` } });
 
-exports.getRepoBranches = repo => get(`${repoUrl(repo)}/git/refs/heads`);
+exports.getPRComments = (repo, prNum) => axios.get(`${repoUrl(repo)}/issues/${prNum}/comments`);
 
-exports.getRepoBranch = (repo, name) => get(`${repoUrl(repo)}/branches/${name}`);
+exports.createPRComment = (repo, prNum, body) =>
+	axios.post(`${repoUrl(repo)}/issues/${prNum}/comments`, { body }, authHeaders());
+
+exports.editPRComment = (repo, commentId, body) =>
+	axios.patch(`${repoUrl(repo)}/issues/comments/${commentId}`, { body }, authHeaders());
+
+exports.deletePRComment = (repo, commentId) =>
+	axios.delete(`${repoUrl(repo)}/issues/comments/${commentId}`, authHeaders());

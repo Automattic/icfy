@@ -131,6 +131,14 @@ function deltaFromStatsAndGroups(firstStats, firstGroups, secondStats, secondGro
 	firstGroups = groupGroups(firstGroups);
 	secondGroups = groupGroups(secondGroups);
 
+	if (_.find(firstStats, { chunk: 'style.css' })) {
+		firstGroups.push({ group: 'style.css', chunks: ['style.css'] });
+	}
+
+	if (_.find(secondStats, { chunk: 'style.css' })) {
+		secondGroups.push({ group: 'style.css', chunks: ['style.css'] });
+	}
+
 	const deltas = [];
 
 	for (const firstGroup of firstGroups) {

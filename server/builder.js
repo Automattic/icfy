@@ -1,6 +1,7 @@
 const { log, sleep } = require('./utils');
 const builder = require('./build-circle');
 const db = require('./db');
+const commentOnGithub = require('./comments');
 
 function recordBundleStats({ sha, chunkStats, chunkGroups }) {
 	const chlen = chunkStats.length;
@@ -35,6 +36,7 @@ async function processQueue() {
 			if (stats) await recordBundleStats(stats);
 
 			await db.markPushAsProcessed(push.sha);
+			await commentOnGithub(push.sha);
 		}
 		log(`Finished processing build queue of ${pushes.length} pushes`);
 
