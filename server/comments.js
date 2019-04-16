@@ -19,6 +19,9 @@ function groupByArea(deltas) {
 		if (['build', 'domainsLanding'].includes(delta.name)) {
 			return 'entry';
 		}
+		if (delta.name === 'gridicons') {
+			return 'gridicons';
+		}
 		if (delta.name === 'manifest') {
 			return 'runtime';
 		}
@@ -34,7 +37,8 @@ const AREAS = [
 		id: 'runtime',
 		title: 'Webpack Runtime',
 		desc:
-			'webpack runtime for loading modules. Is downloaded and parsed every time the app is loaded.',
+			'webpack runtime for loading modules. It is included in the HTML page as an inline script. ' +
+			'Is downloaded and parsed every time the app is loaded.',
 	},
 	{
 		id: 'entry',
@@ -47,21 +51,29 @@ const AREAS = [
 		title: 'Legacy SCSS Stylesheet',
 		desc: 'The monolithic CSS stylesheet that is downloaded on every app load.',
 		desc_inc:
-			'This PR increases the size of the stylesheet, which is a bad news. ' +
+			'👎 This PR increases the size of the stylesheet, which is a bad news. ' +
 			'Please consider migrating the CSS styles you modified to webpack imports.',
-		desc_dec: 'Thanks for making the stylesheet smaller in this PR!',
+		desc_dec: '👍 Thanks for making the stylesheet smaller in this PR!',
 	},
 	{
 		id: 'section',
 		title: 'Sections',
 		desc:
-			'Sections contain code specific for a given set of routes. Is downloaded and parsed only when a particular route is navigated to.',
+			'Sections contain code specific for a given set of routes. ' +
+			'Is downloaded and parsed only when a particular route is navigated to.',
 	},
 	{
 		id: 'async-load',
 		title: 'Async-loaded Components',
 		desc:
 			'React components that are loaded lazily, when a certain part of UI is displayed for the first time.',
+	},
+	{
+		id: 'gridicons',
+		title: 'Gridicons',
+		desc:
+			'Set of SVG icons that is loaded asynchronously to not delay the initial load. ' +
+			'Unless you are modifying Gridicons, you should not see any change here.',
 	},
 	{
 		id: 'moment-locale',
@@ -76,7 +88,7 @@ function watermarkString(watermark) {
 }
 
 async function statsMessage(push) {
-	const delta = await db.getPushDelta(push.ancestor, push.sha);
+	const delta = await db.getPushDelta(push.ancestor, push.sha, { extractManifestGroup: true });
 	const byArea = groupByArea(delta.groups);
 
 	const message = [];

@@ -127,16 +127,33 @@ function deltaFromStats(firstStats, secondStats) {
 	return sortByDelta(deltas);
 }
 
-function deltaFromStatsAndGroups(firstStats, firstGroups, secondStats, secondGroups) {
+function addStyleGroup(stats, groups) {
+	if (_.find(stats, { chunk: 'style.css' })) {
+		groups.push({ group: 'style.css', chunks: ['style.css'] });
+	}
+}
+
+function extractManifestGroup(stats, groups) {
+	if (_.find(stats, { chunk: 'manifest' })) {
+		for (const group of groups) {
+			if (group.chunks.includes('manifest')) {
+				group.chunks = group.chunks.filter(chunk => chunk !== 'manifest');
+			}
+		}
+		groups.push({ group: 'manifest', chunks: ['manifest'] });
+	}
+}
+
+function deltaFromStatsAndGroups(firstStats, firstGroups, secondStats, secondGroups, options) {
 	firstGroups = groupGroups(firstGroups);
 	secondGroups = groupGroups(secondGroups);
 
-	if (_.find(firstStats, { chunk: 'style.css' })) {
-		firstGroups.push({ group: 'style.css', chunks: ['style.css'] });
-	}
+	addStyleGroup(firstStats, firstGroups);
+	addStyleGroup(secondStats, secondGroups);
 
-	if (_.find(secondStats, { chunk: 'style.css' })) {
-		secondGroups.push({ group: 'style.css', chunks: ['style.css'] });
+	if (_.get(options, 'extractManifestGroup', false)) {
+		extractManifestGroup(firstStats, firstGroups);
+		extractManifestGroup(secondStats, secondGroups);
 	}
 
 	const deltas = [];

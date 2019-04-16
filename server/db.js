@@ -270,7 +270,7 @@ const getPushGroups = sha =>
 		.select(['chunk', 'sibling'])
 		.where('sha', sha);
 
-exports.getPushDelta = function(first, second) {
+exports.getPushDelta = function(first, second, options) {
 	// stats for first, second
 	const statsRequest = Promise.all([getPushStats(first), getPushStats(second)]);
 	const groupsRequest = Promise.all([getPushGroups(first), getPushGroups(second)]);
@@ -280,7 +280,7 @@ exports.getPushDelta = function(first, second) {
 	);
 	const groupsDelta = Promise.all([statsRequest, groupsRequest]).then(
 		([[firstStats, secondStats], [firstGroups, secondGroups]]) =>
-			deltaFromStatsAndGroups(firstStats, firstGroups, secondStats, secondGroups)
+			deltaFromStatsAndGroups(firstStats, firstGroups, secondStats, secondGroups, options)
 	);
 
 	return Promise.all([chunksDelta, groupsDelta]).then(([chunks, groups]) => ({ chunks, groups }));
