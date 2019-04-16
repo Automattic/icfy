@@ -20,7 +20,6 @@ app.get('/pushes', getPushes);
 app.get('/pushstats', getPushStats);
 app.get('/delta', getPushDelta);
 app.get('/pushlog', getPushLog);
-app.post('/removepush', removePush);
 app.get('/buildlog', getCircleBuildLog);
 
 // API for webhooks from CircleCI
@@ -109,14 +108,6 @@ function getPushLog(req, res) {
 
 	db.getPushLog(count, branch)
 		.then(pushlog => res.json({ pushlog }))
-		.catch(reportError(res));
-}
-
-function removePush(req, res) {
-	const { sha } = req.body;
-
-	db.removePush(sha)
-		.then(() => res.json({}))
 		.catch(reportError(res));
 }
 
