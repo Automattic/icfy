@@ -26,6 +26,9 @@ async function processQueue() {
 				if (push.branch !== 'master' && age > 24) {
 					log(`Removing push ${push.sha} because it's older than 24 hours (${age}h)`);
 					await db.removePush(push.sha);
+				} else if (push.branch === 'master' && age > 240) {
+					log(`Removing push ${push.sha} because it's older than 10 days (${age}h)`);
+					await db.removePush(push.sha);
 				}
 
 				continue;
