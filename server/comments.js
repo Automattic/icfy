@@ -157,8 +157,6 @@ async function getOurPRCommentIDs(repo, prNum) {
 		.map(comment => comment.id);
 }
 
-const AUTHOR_SHORTLIST = ['renovate[bot]', 'jsnajdr', 'blowery', 'flootr', 'sgomes'];
-
 module.exports = async function commentOnGithub(sha) {
 	const [push] = await db.getPush(sha);
 
@@ -167,7 +165,7 @@ module.exports = async function commentOnGithub(sha) {
 		return;
 	}
 
-	if (push.branch === 'master' || !push.ancestor || !AUTHOR_SHORTLIST.includes(push.author)) {
+	if (push.branch === 'master' || !push.ancestor) {
 		log('Push not eligible for comment:', sha);
 		return;
 	}
