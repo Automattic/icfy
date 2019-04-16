@@ -1,4 +1,4 @@
-import { get, post } from 'axios';
+import { get } from 'axios';
 
 // const apiURL = 'http://localhost:5000';
 const apiURL = 'http://api.iscalypsofastyet.com:5000';
@@ -38,8 +38,6 @@ export const getDelta = (firstSha, secondSha) =>
 
 export const getPushLog = (count, branch) =>
 	get(`${apiURL}/pushlog` + buildQuery({ count, branch }));
-
-export const removePush = sha => post(`${apiURL}/removepush`, { sha });
 
 export const getCircleBuildLog = (count, branch) =>
 	get(`${apiURL}/buildlog` + buildQuery({ count, branch }));

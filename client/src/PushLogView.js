@@ -1,5 +1,5 @@
 import React from 'react';
-import { buildQuery, getPushLog, removePush } from './api';
+import { buildQuery, getPushLog } from './api';
 import Masterbar from './Masterbar';
 import CommitMessage from './CommitMessage';
 import FormatDate from './FormatDate';
@@ -10,18 +10,24 @@ function Table({ header, rows }) {
 	return (
 		<table className="table">
 			<thead>
-				<tr>{header.map(col => <th>{col}</th>)}</tr>
+				<tr>
+					{header.map(col => (
+						<th>{col}</th>
+					))}
+				</tr>
 			</thead>
-			<tbody>{rows.map(row => <tr>{row.map(col => <td>{col}</td>)}</tr>)}</tbody>
+			<tbody>
+				{rows.map(row => (
+					<tr>
+						{row.map(col => (
+							<td>{col}</td>
+						))}
+					</tr>
+				))}
+			</tbody>
 		</table>
 	);
 }
-
-const RemoveButton = ({ sha, onClick }) => (
-	<button className="remove-button" data-sha={sha} onClick={onClick}>
-		🗑
-	</button>
-);
 
 const DEFAULT_COUNT = '20';
 const COUNTS = [
@@ -53,7 +59,7 @@ class PushLogView extends React.Component {
 		const count = searchParams.get('count') || DEFAULT_COUNT;
 		const branch = searchParams.get('branch') || DEFAULT_BRANCH;
 
-		this.state = { count, branch, pushlog: null, removingPushSha: null };
+		this.state = { count, branch, pushlog: null };
 	}
 
 	componentDidMount() {
@@ -92,32 +98,8 @@ class PushLogView extends React.Component {
 		);
 	}
 
-	handleRemovePush = async event => {
-		const { sha } = event.target.dataset;
-		this.setState({ removingPushSha: sha });
-		await removePush(sha);
-		this.setState({ removingPushSha: null, pushlog: null });
-		await this.loadPushLog();
-	};
-
 	renderProcessed(push) {
-		if (push.processed) {
-			return '👍';
-		}
-
-		if (push.branch === 'master') {
-			return 'waiting…';
-		}
-
-		if (this.state.removingPushSha === push.sha) {
-			return 'removing…';
-		}
-
-		return (
-			<span>
-				waiting… (<RemoveButton sha={push.sha} onClick={this.handleRemovePush} />)
-			</span>
-		);
+		return push.processed ? '👍' : '⌛';
 	}
 
 	renderSha(push) {
