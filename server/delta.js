@@ -47,25 +47,55 @@ function deltaPercentsOf(firstSizes, deltaSizes) {
 	});
 }
 
+function findDuplicateChunkGroups(grouped) {
+	// find chunk groups whose chunk sets are equal by sorting into "equality classes"
+	const equalGroups = []; // array of { chunkSet, groupNames } tuples
+	for (const [groupName, chunkSet] of Object.entries(grouped)) {
+		const entry = equalGroups.find(record => _.isEqual(record.chunkSet, chunkSet));
+		if (entry) {
+			entry.groupNames.push(groupName);
+		} else {
+			equalGroups.push({ chunkSet, groupNames: [groupName] });
+		}
+	}
+
+	// go through the "equality classes", find ones with more that one member
+	// and remove all the duplicate ones. Keep the one with shortest name.
+	const chunkGroupsToRemove = _.flatMap(equalGroups, ({ groupNames }) => {
+		if (groupNames.length < 2) {
+			return [];
+		}
+
+		const shortestGroupName = _.minBy(groupNames, 'length');
+		return groupNames.filter(groupName => groupName !== shortestGroupName);
+	});
+
+	return chunkGroupsToRemove;
+}
+
 function groupGroups(groups) {
 	const grouped = {};
 	for (const record of groups) {
 		const group = record.chunk;
 		const chunk = record.sibling;
 
-		// skip moment-locale-xx-js chunk groups with buggy names
-		if (/^moment-locale-.*-js$/.test(group)) {
-			continue;
+		if (!grouped[group]) {
+			grouped[group] = new Set();
 		}
 
-		if (!grouped[group]) {
-			grouped[group] = [group]; // every group has the same-named chunk as member
-		}
-		if (!grouped[group].includes(chunk)) {
-			grouped[group].push(chunk);
-		}
+		grouped[group].add(chunk);
 	}
-	return _.map(grouped, (chunks, group) => ({ group, chunks }));
+
+	// remove duplicate group names (module, module-index, module-index-js)
+	const chunkGroupsToRemove = findDuplicateChunkGroups(grouped);
+
+	const groupedWithoutDuplicates = _.omit(grouped, chunkGroupsToRemove);
+
+	// convert to arrays
+	return _.map(groupedWithoutDuplicates, (chunkSet, groupName) => ({
+		group: groupName,
+		chunks: [...chunkSet],
+	}));
 }
 
 function sizesOfGroup(group, stats) {
