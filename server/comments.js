@@ -37,7 +37,7 @@ const AREAS = [
 		id: 'runtime',
 		title: 'Webpack Runtime',
 		desc:
-			'webpack runtime for loading modules. It is included in the HTML page as an inline script. ' +
+			'Webpack runtime for loading modules. It is included in the HTML page as an inline script. ' +
 			'Is downloaded and parsed every time the app is loaded.',
 	},
 	{
@@ -109,21 +109,34 @@ async function statsMessage(push) {
 				continue;
 			}
 
-			message.push('');
-			message.push(`**${area.title}**`);
-			message.push(area.desc);
+			const bytesDelta = _.reduce(areaDelta, (sum, delta) => sum + delta.deltaSizes.parsed_size, 0);
+			const changedBytes = Math.abs(bytesDelta);
+			const suffix = bytesDelta < 0 ? 'removed 📉' : 'added 📈';
 
-			if (_.every(areaDelta, delta => _.every(delta.deltaSizes, size => size > 0))) {
-				message.push(area.desc_inc);
-			} else if (_.every(areaDelta, delta => _.every(delta.deltaSizes, size => size < 0))) {
-				message.push(area.desc_dec);
-			}
+			message.push('');
+			message.push(`**${area.title}** (~${changedBytes} bytes ${suffix})`);
+			message.push('<details>');
+			message.push('');
 
 			message.push('```');
 			message.push(printDeltaTable(areaDelta));
 			message.push('```');
+
+			message.push('');
+			message.push(area.desc);
+			if (area.desc_inc && _.every(areaDelta, delta => delta.deltaSizes.parsed_size > 0)) {
+				message.push(area.desc_inc);
+			} else if (area.desc_dec && _.every(areaDelta, delta => delta.deltaSizes.parsed_size < 0)) {
+				message.push(area.desc_dec);
+			}
+
+			message.push('</details>');
 		}
 
+		message.push('');
+		message.push('**Legend**');
+		message.push('<details>');
+		message.push('<summary>What is parsed and gzip size?</summary>');
 		message.push('');
 		message.push(
 			'**Parsed Size:** Uncompressed size of the JS and CSS files. This much code needs to be parsed and stored in memory.'
@@ -131,6 +144,7 @@ async function statsMessage(push) {
 		message.push(
 			'**Gzip Size:** Compressed size of the JS and CSS files. This much data needs to be downloaded over network.'
 		);
+		message.push('</details>');
 	}
 	message.push('');
 	message.push(
