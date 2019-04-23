@@ -174,6 +174,11 @@ function extractManifestGroup(stats, groups) {
 	}
 }
 
+function isDeltaEligible(deltaSizes) {
+	// ignore tiny changes smaller than 10 bytes
+	return Math.abs(_.get(deltaSizes, 'parsed_size', 0)) > 10;
+}
+
 function deltaFromStatsAndGroups(firstStats, firstGroups, secondStats, secondGroups, options) {
 	firstGroups = groupGroups(firstGroups);
 	secondGroups = groupGroups(secondGroups);
@@ -196,7 +201,7 @@ function deltaFromStatsAndGroups(firstStats, firstGroups, secondStats, secondGro
 		const deltaSizes = deltaSizesOf(firstSizes, secondSizes);
 		const deltaPercents = deltaPercentsOf(firstSizes, deltaSizes);
 
-		if (_.some(deltaSizes, size => size !== 0)) {
+		if (isDeltaEligible(deltaSizes)) {
 			deltas.push({
 				name: group,
 				firstSizes,
