@@ -182,6 +182,7 @@ class ChartView extends React.Component {
 						<PushDetails
 							sha={this.state.currentPushSha}
 							prevSha={this.state.currentPrevPushSha}
+							deltaTypes={['chunks']}
 							debounceDelay={500}
 						/>
 					)}

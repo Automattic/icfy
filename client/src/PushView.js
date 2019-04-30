@@ -13,7 +13,7 @@ const PushView = props => {
 		<div className="layout">
 			<Masterbar />
 			<div className="content">
-				<PushDetails sha={sha} prevSha={prevSha} deltaType="groups"/>
+				<PushDetails sha={sha} prevSha={prevSha} deltaTypes={['groups', 'chunks']} />
 			</div>
 		</div>
 	);

@@ -173,15 +173,14 @@ class ChunkGroupsChartView extends React.Component {
 							options={branchList && branchList.map(option => ({ value: option, label: option }))}
 						/>
 					</div>
-					{this.state.chartData &&
-						this.state.chartData[0] && (
-							<Chart chartData={this.state.chartData} onMouseOver={this.showPush} />
-						)}
+					{this.state.chartData && this.state.chartData[0] && (
+						<Chart chartData={this.state.chartData} onMouseOver={this.showPush} />
+					)}
 					{this.state.currentPushSha && (
 						<PushDetails
 							sha={this.state.currentPushSha}
 							prevSha={this.state.currentPrevPushSha}
-							deltaType="groups"
+							deltaTypes={['groups']}
 							debounceDelay={500}
 						/>
 					)}

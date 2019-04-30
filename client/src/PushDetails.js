@@ -13,6 +13,7 @@ function pushParamsEqual(paramsA, paramsB) {
 class PushDetails extends React.Component {
 	static defaultProps = {
 		debounceDelay: 0,
+		deltaTypes: [],
 	};
 
 	state = {
@@ -80,7 +81,9 @@ class PushDetails extends React.Component {
 				<b>Commit:</b> <PushLink sha={sha} prevSha={prevSha} /> <GitHubLink sha={sha} />
 				<br />
 				<Push push={push} />
-				<Delta type={this.props.deltaType} delta={delta} />
+				{this.props.deltaTypes.map(type => (
+					<Delta type={type} delta={delta} />
+				))}
 			</div>
 		);
 	}
