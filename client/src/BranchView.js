@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Fragment } from 'react';
 import { getBranches, getBranch, getPushes, getDelta } from './api';
 import Masterbar from './Masterbar';
 import Delta from './Delta';
@@ -145,7 +145,12 @@ class BranchView extends React.Component {
 			return <p>Building…</p>;
 		}
 
-		return <Delta delta={selectedBranchLastDelta} />;
+		return (
+			<Fragment>
+				<Delta type="groups" delta={selectedBranchLastDelta} />
+				<Delta type="chunks" delta={selectedBranchLastDelta} />
+			</Fragment>
+		);
 	}
 
 	renderBranchPreviousPushes() {
