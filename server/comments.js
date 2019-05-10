@@ -16,13 +16,16 @@ function groupByArea(deltas) {
 		if (delta.name.startsWith('async-load-')) {
 			return 'async-load';
 		}
-		if (['build', 'domainsLanding'].includes(delta.name)) {
+		if (
+			['build', 'domainsLanding', 'entry'].includes(delta.name) ||
+			delta.name.startsWith('entry-')
+		) {
 			return 'entry';
 		}
 		if (delta.name === 'gridicons') {
 			return 'gridicons';
 		}
-		if (delta.name === 'manifest') {
+		if (delta.name === 'manifest' || delta.name === 'runtime') {
 			return 'runtime';
 		}
 		if (delta.name === 'style.css') {
