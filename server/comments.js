@@ -112,12 +112,12 @@ async function statsMessage(push) {
 				continue;
 			}
 
-			const bytesDelta = _.reduce(areaDelta, (sum, delta) => sum + delta.deltaSizes.parsed_size, 0);
+			const bytesDelta = _.reduce(areaDelta, (sum, delta) => sum + delta.deltaSizes.gzip_size, 0);
 			const changedBytes = Math.abs(bytesDelta);
 			const suffix = bytesDelta < 0 ? 'removed 📉' : 'added 📈';
 
 			message.push('');
-			message.push(`**${area.title}** (~${changedBytes} bytes ${suffix})`);
+			message.push(`**${area.title}** (~${changedBytes} bytes ${suffix} [gzipped])`);
 			message.push('<details>');
 			message.push('');
 
@@ -127,9 +127,9 @@ async function statsMessage(push) {
 
 			message.push('');
 			message.push(area.desc);
-			if (area.desc_inc && _.every(areaDelta, delta => delta.deltaSizes.parsed_size > 0)) {
+			if (area.desc_inc && _.every(areaDelta, delta => delta.deltaSizes.gzip_size > 0)) {
 				message.push(area.desc_inc);
-			} else if (area.desc_dec && _.every(areaDelta, delta => delta.deltaSizes.parsed_size < 0)) {
+			} else if (area.desc_dec && _.every(areaDelta, delta => delta.deltaSizes.gzip_size < 0)) {
 				message.push(area.desc_dec);
 			}
 
