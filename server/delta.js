@@ -110,13 +110,35 @@ function sortByDelta(deltas) {
 	return _.reverse(_.sortBy(deltas, delta => Math.abs(delta.deltaSizes.parsed_size)));
 }
 
+// convert legacy entrypoint names to the modern ones
+function canonicalName(name) {
+	if (name === 'build') {
+		return 'entry-main';
+	}
+	if (name === 'domainsLanding') {
+		return 'entry-domains-landing';
+	}
+
+	return name;
+}
+
+function byChunkName(chunk) {
+	const name = canonicalName(chunk.chunk);
+	return ch => name === canonicalName(ch.chunk);
+}
+
+function byGroupName(group) {
+	const name = canonicalName(group.group);
+	return g => name === canonicalName(g.group);
+}
+
 function deltaFromStats(firstStats, secondStats) {
 	const deltas = [];
 
 	for (const firstStat of firstStats) {
-		const chunk = firstStat.chunk;
+		const secondStat = secondStats.find(byChunkName(firstStat));
+		const name = (secondStat || firstStat).chunk; // prefer the second chunk's name
 		const firstHash = firstStat.hash;
-		const secondStat = secondStats.find(s => s.chunk === chunk);
 		const secondHash = secondStat ? secondStat.hash : null;
 
 		const firstSizes = sizesOf(firstStat);
@@ -126,7 +148,7 @@ function deltaFromStats(firstStats, secondStats) {
 
 		if (_.some(deltaSizes, size => size !== 0)) {
 			deltas.push({
-				name: chunk,
+				name,
 				firstHash,
 				firstSizes,
 				secondHash,
@@ -138,16 +160,19 @@ function deltaFromStats(firstStats, secondStats) {
 	}
 
 	for (const secondStat of secondStats) {
-		if (!firstStats.find(s => s.chunk === secondStat.chunk)) {
+		if (!firstStats.find(byChunkName(secondStat))) {
+			const name = secondStat.chunk;
+			const firstHash = null;
 			const firstSizes = null;
+			const secondHash = secondStat.hash;
 			const secondSizes = sizesOf(secondStat);
 			const deltaSizes = deltaSizesOf(firstSizes, secondSizes);
 
 			deltas.push({
-				name: secondStat.chunk,
-				firstHash: null,
+				name,
+				firstHash,
 				firstSizes,
-				secondHash: secondStat.hash,
+				secondHash,
 				secondSizes,
 				deltaSizes,
 			});
@@ -179,23 +204,6 @@ function isDeltaEligible(deltaSizes) {
 	return Math.abs(_.get(deltaSizes, 'parsed_size', 0)) > 10;
 }
 
-// convert legacy entrypoint names to the modern ones
-function canonicalGroupName(name) {
-	if (name === 'build') {
-		return 'entry-main';
-	}
-	if (name === 'domainsLanding') {
-		return 'entry-domains-landing';
-	}
-
-	return name;
-}
-
-function byGroupName(group) {
-	const name = canonicalGroupName(group.group);
-	return g => name === canonicalGroupName(g.group);
-}
-
 function deltaFromStatsAndGroups(firstStats, firstGroups, secondStats, secondGroups, options) {
 	firstGroups = groupGroups(firstGroups);
 	secondGroups = groupGroups(secondGroups);
@@ -211,7 +219,7 @@ function deltaFromStatsAndGroups(firstStats, firstGroups, secondStats, secondGro
 	const deltas = [];
 
 	for (const firstGroup of firstGroups) {
-		const secondGroup = _.find(secondGroups, byGroupName(firstGroup));
+		const secondGroup = secondGroups.find(byGroupName(firstGroup));
 		const name = (secondGroup || firstGroup).group; // prefer the second group's name
 		const firstSizes = sizesOfGroup(firstGroup, firstStats);
 		const secondSizes = sizesOfGroup(secondGroup, secondStats);
@@ -230,7 +238,7 @@ function deltaFromStatsAndGroups(firstStats, firstGroups, secondStats, secondGro
 	}
 
 	for (const secondGroup of secondGroups) {
-		if (!_.find(firstGroups, byGroupName(secondGroup))) {
+		if (!firstGroups.find(byGroupName(secondGroup))) {
 			const name = secondGroup.group;
 			const firstSizes = null;
 			const secondSizes = sizesOfGroup(secondGroup, secondStats);
