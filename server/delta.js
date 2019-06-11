@@ -179,6 +179,23 @@ function isDeltaEligible(deltaSizes) {
 	return Math.abs(_.get(deltaSizes, 'parsed_size', 0)) > 10;
 }
 
+// convert legacy entrypoint names to the modern ones
+function canonicalGroupName(name) {
+	if (name === 'build') {
+		return 'entry-main';
+	}
+	if (name === 'domainsLanding') {
+		return 'entry-domains-landing';
+	}
+
+	return name;
+}
+
+function byGroupName(group) {
+	const name = canonicalGroupName(group.group);
+	return g => name === canonicalGroupName(g.group);
+}
+
 function deltaFromStatsAndGroups(firstStats, firstGroups, secondStats, secondGroups, options) {
 	firstGroups = groupGroups(firstGroups);
 	secondGroups = groupGroups(secondGroups);
@@ -194,8 +211,8 @@ function deltaFromStatsAndGroups(firstStats, firstGroups, secondStats, secondGro
 	const deltas = [];
 
 	for (const firstGroup of firstGroups) {
-		const group = firstGroup.group;
-		const secondGroup = _.find(secondGroups, { group });
+		const secondGroup = _.find(secondGroups, byGroupName(firstGroup));
+		const name = (secondGroup || firstGroup).group; // prefer the second group's name
 		const firstSizes = sizesOfGroup(firstGroup, firstStats);
 		const secondSizes = sizesOfGroup(secondGroup, secondStats);
 		const deltaSizes = deltaSizesOf(firstSizes, secondSizes);
@@ -203,7 +220,7 @@ function deltaFromStatsAndGroups(firstStats, firstGroups, secondStats, secondGro
 
 		if (isDeltaEligible(deltaSizes)) {
 			deltas.push({
-				name: group,
+				name,
 				firstSizes,
 				secondSizes,
 				deltaSizes,
@@ -213,14 +230,14 @@ function deltaFromStatsAndGroups(firstStats, firstGroups, secondStats, secondGro
 	}
 
 	for (const secondGroup of secondGroups) {
-		const group = secondGroup.group;
-		if (!_.find(firstGroups, { group })) {
+		if (!_.find(firstGroups, byGroupName(secondGroup))) {
+			const name = secondGroup.group;
 			const firstSizes = null;
 			const secondSizes = sizesOfGroup(secondGroup, secondStats);
 			const deltaSizes = deltaSizesOf(firstSizes, secondSizes);
 
 			deltas.push({
-				name: group,
+				name,
 				firstSizes,
 				secondSizes,
 				deltaSizes,

@@ -126,6 +126,31 @@ async function getPushShas(branch, lastCount) {
 	return masterPushes;
 }
 
+const EQUIVALENT_CHUNK_NAMES = [
+	['build', 'entry-main'],
+	['domainsLanding', 'entry-domains-landing'],
+];
+
+function chunkWhere(chunk) {
+	const equivalentNames = EQUIVALENT_CHUNK_NAMES.find(names => names.includes(chunk));
+	if (equivalentNames) {
+		return ['in', equivalentNames];
+	}
+
+	return ['=', chunk];
+}
+
+function addEquivalentChunks(chunks) {
+	return chunks.reduce((output, chunk) => {
+		const equivalentNames = EQUIVALENT_CHUNK_NAMES.find(names => names.includes(chunk));
+		if (equivalentNames) {
+			return [...output, ...equivalentNames];
+		}
+
+		return [...output, chunk];
+	}, []);
+}
+
 exports.getChartData = async (period, chunk, branch = 'master') => {
 	const lastCount = periodToLastCount(period);
 	const pushes = await timed(getPushShas(branch, lastCount), 'getPushShas');
@@ -133,7 +158,7 @@ exports.getChartData = async (period, chunk, branch = 'master') => {
 	const stats = await K('stats')
 		.select(['sha', 'stat_size', 'parsed_size', 'gzip_size'])
 		.where('sha', 'in', shas)
-		.andWhere('chunk', chunk);
+		.andWhere('chunk', ...chunkWhere(chunk));
 
 	const pushesWithStats = pushes.map(({ sha, created_at }) => {
 		const pushStats = _.find(stats, { sha });
@@ -196,8 +221,13 @@ function getSiblingsWithSizes(shas, chunks) {
 exports.getChunkGroupChartData = async (period, chunks, loadedChunks, branch = 'master') => {
 	const lastCount = periodToLastCount(period);
 
+	// parse the string query arguments
 	loadedChunks = loadedChunks ? _.uniq(_.split(loadedChunks, ',')) : [];
 	chunks = chunks ? _.uniq(_.split(chunks, ',')) : [];
+
+	// add equivalent chunk names to chunks that have both legacy and modern name
+	loadedChunks = addEquivalentChunks(loadedChunks);
+	chunks = addEquivalentChunks(chunks);
 
 	// Retrieve the list of shas (and their created_at timestamps) we will collect size stats for
 	const pushes = await timed(getPushShas(branch, lastCount), 'getPushShas');
