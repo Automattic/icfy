@@ -16,7 +16,7 @@ const PERIODS = [
 	{ value: 'last1600', name: 'last 1600 pushes' },
 ];
 
-const DEFAULT_CHUNKS = 'build';
+const DEFAULT_CHUNKS = 'entry-main';
 const DEFAULT_SIZE = 'gzip_size';
 const DEFAULT_PERIOD = 'last200';
 const DEFAULT_BRANCH = 'master';

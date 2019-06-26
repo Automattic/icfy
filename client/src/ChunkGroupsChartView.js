@@ -7,7 +7,7 @@ import PushDetails from './PushDetails';
 import Select from './Select';
 import ReactSelect from 'react-select';
 import ChunkList from './ChunkList';
-import * as _ from 'lodash';
+import { without } from 'lodash';
 
 const SIZES = ['stat_size', 'parsed_size', 'gzip_size'];
 const PERIODS = [
@@ -27,7 +27,7 @@ class ChunkGroupsChartView extends React.Component {
 		this.state = {
 			chunkGroups: null,
 			givenChunkGroups: [],
-			toLoadChunkGroups: ['build', 'reader'],
+			toLoadChunkGroups: ['entry-main', 'reader'],
 			selectedSize: 'gzip_size',
 			selectedPeriod: 'last200',
 			selectedBranch,
@@ -98,7 +98,7 @@ class ChunkGroupsChartView extends React.Component {
 
 	setToLoadChunkGroups = toLoadChunkGroups => {
 		if (toLoadChunkGroups.length === 0) {
-			toLoadChunkGroups = ['build', 'reader'];
+			toLoadChunkGroups = ['entry-main', 'reader'];
 		}
 		this.setState({ toLoadChunkGroups }, () => this.loadChart());
 	};
@@ -128,7 +128,7 @@ class ChunkGroupsChartView extends React.Component {
 	}
 
 	render() {
-		const toLoadOptions = _.without(this.state.chunkGroups, ...this.state.givenChunkGroups);
+		const toLoadOptions = without(this.state.chunkGroups, ...this.state.givenChunkGroups);
 		const { selectedBranch, branchList } = this.state;
 
 		return (

@@ -6,7 +6,6 @@ import CommitMessage from './CommitMessage';
 import Push from './Push';
 import { PushLink, GitHubLink } from './links';
 import Select from 'react-select';
-import 'react-select/dist/react-select.css';
 
 const BranchCommit = ({ commit }) => {
 	if (!commit) {
