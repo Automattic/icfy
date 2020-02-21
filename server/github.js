@@ -4,7 +4,8 @@ const axios = require('axios');
 const repoUrl = repoSlug => `https://api.github.com/repos/${repoSlug}`;
 const authHeaders = () => ({ headers: { Authorization: `token ${nconf.get('github:token')}` } });
 
-exports.getPRComments = (repo, prNum) => axios.get(`${repoUrl(repo)}/issues/${prNum}/comments`);
+exports.getPRComments = (repo, prNum) =>
+	axios.get(`${repoUrl(repo)}/issues/${prNum}/comments`, authHeaders());
 
 exports.createPRComment = (repo, prNum, body) =>
 	axios.post(`${repoUrl(repo)}/issues/${prNum}/comments`, { body }, authHeaders());
