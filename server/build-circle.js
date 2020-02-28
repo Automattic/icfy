@@ -66,21 +66,9 @@ exports.processPush = async function(push) {
 		return null;
 	}
 
-	// Download style.json. It's optional, not on older builds and branches
-	let styleStats = null;
-	const styleArtifact = artifacts.find(a => a.url.endsWith('style.json'));
-	if (styleArtifact) {
-		const { url } = styleArtifact;
-		styleStats = await timed(downloadArtifact(url), `Downloading ${url}`);
-		if (!styleStats) {
-			// if the optional artifact is there but fails to download? that's a reason to abort
-			return null;
-		}
-	}
-
 	// Analyze the downloaded stats
 	const result = {
-		stats: analyzeBundle(push.sha, stats, chart, styleStats),
+		stats: analyzeBundle(push.sha, stats, chart),
 	};
 
 	// determine the ancestor
