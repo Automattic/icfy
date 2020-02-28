@@ -68,7 +68,7 @@ exports.processPush = async function(push) {
 
 	// Analyze the downloaded stats
 	const result = {
-		stats: analyzeBundle(push.sha, stats, chart),
+		stats: analyzeBundle(push.sha, { stats, chart }),
 	};
 
 	// determine the ancestor

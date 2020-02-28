@@ -1,6 +1,6 @@
 const _ = require('lodash');
 
-function analyzeBundle(sha, stats, chart) {
+function analyzeBundle(sha, { stats, chart }) {
 	const chunkStats = chart.map(asset => {
 		const [chunk, hash] = asset.label.split('.');
 
