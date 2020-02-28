@@ -15,3 +15,12 @@ exports.editPRComment = (repo, commentId, body) =>
 
 exports.deletePRComment = (repo, commentId) =>
 	axios.delete(`${repoUrl(repo)}/issues/comments/${commentId}`, authHeaders());
+
+exports.getActionRunArtifacts = (repo, buildId) =>
+	axios.get(`${repoUrl(repo)}/actions/runs/${buildId}/artifacts`, authHeaders());
+
+exports.getActionRunArtifactArchiveStream = (repo, artifactId) =>
+	axios.get(`${repoUrl(repo)}/actions/artifacts/${artifactId}/zip`, {
+		responseType: 'stream',
+		...authHeaders(),
+	});

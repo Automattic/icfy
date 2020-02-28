@@ -1,5 +1,5 @@
 const { log, sleep } = require('./utils');
-const builder = require('./build-circle');
+const builder = require('./build-ci');
 const db = require('./db');
 const commentOnGithub = require('./comments');
 
@@ -16,7 +16,7 @@ async function processQueue() {
 
 		log(`Processing build queue of ${pushes.length} pushes`);
 		for (const push of pushes) {
-			const result = await builder.processPush(push);
+			const result = await builder(push);
 
 			if (!result) {
 				const age = ((Date.now() - push.created_at) / (1000 * 60 * 60)).toFixed(1);

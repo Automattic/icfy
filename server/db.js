@@ -343,15 +343,41 @@ exports.removePush = sha =>
 		.where('sha', sha)
 		.andWhere('processed', false);
 
-exports.insertCircleBuild = build => K('circle_builds').insert(build);
+function tableForCIService(from) {
+	switch (from) {
+		case 'circle':
+			return 'circle_builds';
+		case 'github':
+			return 'github_builds';
+		default:
+			return null;
+	}
+}
 
-exports.getCircleBuilds = sha =>
-	K('circle_builds')
-		.select()
-		.where('sha', sha);
+exports.insertCIBuild = (from = 'circle', build) => {
+	const table = tableForCIService(from);
+	if (!table) {
+		return Promise.reject(new Error(`Unknown CI service: ${from}`));
+	}
+	return K(table).insert(build);
+};
 
-exports.getCircleBuildLog = (count, branch) => {
-	const query = K('circle_builds')
+exports.getCIBuilds = async sha => {
+	const services = ['circle', 'github'];
+	const queries = services.map(async from => {
+		const table = tableForCIService(from);
+		const builds = await K(table)
+			.select()
+			.where('sha', sha);
+		return builds.map(build => ({ ...build, from }));
+	});
+	const results = await Promise.all(queries);
+	return results.reduce((a, b) => [...a, ...b]);
+};
+
+exports.getCIBuildLog = (count, branch, from) => {
+	const table = tableForCIService(from);
+	const query = K(table)
 		.select()
 		.orderBy('build_num', 'desc')
 		.limit(count);

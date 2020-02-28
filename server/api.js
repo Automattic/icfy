@@ -112,9 +112,9 @@ function getPushLog(req, res) {
 }
 
 function getBuildLog(req, res) {
-	const { count = 20, branch } = req.query;
+	const { count = 20, branch, from = 'circle' } = req.query;
 
-	db.getCircleBuildLog(count, branch)
+	db.getCIBuildLog(count, branch, from)
 		.then(buildlog => res.json({ buildlog }))
 		.catch(reportError(res));
 }
@@ -135,9 +135,10 @@ function submitStats(req, res) {
 		return;
 	}
 
-	console.log('Received CI success webhook notification:', req.body);
+	const { from = 'circle' } = req.query;
+	console.log('Received CI success webhook notification:', from, req.body);
 	const build = { ...req.body.payload, success: true };
-	db.insertCircleBuild(build)
+	db.insertCIBuild(from, build)
 		.then(() => res.json({}))
 		.catch(reportError(res));
 }
@@ -147,9 +148,10 @@ function submitStatsFailed(req, res) {
 		return;
 	}
 
-	console.log('Received CI failure webhook notification:', req.body);
+	const { from = 'circle' } = req.query;
+	console.log('Received CI failure webhook notification:', from, req.body);
 	const build = { ...req.body.payload, success: false };
-	db.insertCircleBuild(build)
+	db.insertCIBuild(from, build)
 		.then(() => res.json({}))
 		.catch(reportError(res));
 }

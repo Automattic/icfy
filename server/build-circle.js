@@ -1,8 +1,5 @@
-const _ = require('lodash');
 const { get } = require('axios');
 const { log, timed } = require('./utils');
-const db = require('./db');
-const analyzeBundle = require('./analyze');
 
 const REPO = 'Automattic/wp-calypso';
 
@@ -27,17 +24,9 @@ async function downloadArtifact(url) {
 	}
 }
 
-exports.processPush = async function(push) {
-	const circleBuilds = await db.getCircleBuilds(push.sha);
-	const lastSuccessfulCircleBuild = _.findLast(circleBuilds, 'success');
-	if (!lastSuccessfulCircleBuild) {
-		return null;
-	}
-
-	const { ancestor, build_num } = lastSuccessfulCircleBuild;
-
+async function processBuild(buildNum) {
 	// download the list of artifacts
-	const artifacts = await downloadArtifactList(build_num);
+	const artifacts = await downloadArtifactList(buildNum);
 	if (!artifacts) {
 		return null;
 	}
@@ -46,7 +35,7 @@ exports.processPush = async function(push) {
 	const urls = ['stats.json', 'chart.json'].map(suffix => {
 		const artifact = artifacts.find(a => a.url.endsWith(suffix));
 		if (!artifact) {
-			log(`${suffix} file missing in artifacts of ${REPO}/${build_num}`);
+			log(`${suffix} file missing in artifacts of ${REPO}/${buildNum}`);
 			return null;
 		}
 		return artifact.url;
@@ -66,16 +55,7 @@ exports.processPush = async function(push) {
 		return null;
 	}
 
-	// Analyze the downloaded stats
-	const result = {
-		stats: analyzeBundle(push.sha, { stats, chart }),
-	};
-
-	// determine the ancestor
-	if (ancestor && push.branch !== 'master' && !push.ancestor) {
-		log(`ancestor of ${push.branch} (${push.sha}): [${ancestor}]`);
-		result.ancestor = ancestor;
-	}
-
-	return result;
+	return { stats, chart };
 };
+
+module.exports = processBuild;
