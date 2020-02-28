@@ -12,6 +12,7 @@
     "mysql": "^2.18.1",
     "nconf": "^0.8.5",
     "text-table": "^0.2.0",
+    "unzipper": "^0.10.10",
     "webpack-bundle-analyzer": "^3.6.0"
   }
 }
