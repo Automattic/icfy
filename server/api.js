@@ -20,9 +20,9 @@ app.get('/pushes', getPushes);
 app.get('/pushstats', getPushStats);
 app.get('/delta', getPushDelta);
 app.get('/pushlog', getPushLog);
-app.get('/buildlog', getCircleBuildLog);
+app.get('/buildlog', getBuildLog);
 
-// API for webhooks from CircleCI
+// API for webhooks from CI (CircleCI and GitHub Actions)
 app.post('/submit-stats', submitStats);
 app.post('/submit-stats-failed', submitStatsFailed);
 
@@ -111,7 +111,7 @@ function getPushLog(req, res) {
 		.catch(reportError(res));
 }
 
-function getCircleBuildLog(req, res) {
+function getBuildLog(req, res) {
 	const { count = 20, branch } = req.query;
 
 	db.getCircleBuildLog(count, branch)
@@ -125,7 +125,7 @@ function verifyWebhookSecret(req, res) {
 		return true;
 	}
 
-	console.log('bad secret in CircleCI webhook notification');
+	console.log('bad secret in CI webhook notification');
 	res.status(500).send('Unauthenticated');
 	return false;
 }
@@ -135,7 +135,7 @@ function submitStats(req, res) {
 		return;
 	}
 
-	console.log('Received CircleCI success webhook notification:', req.body);
+	console.log('Received CI success webhook notification:', req.body);
 	const build = { ...req.body.payload, success: true };
 	db.insertCircleBuild(build)
 		.then(() => res.json({}))
@@ -147,7 +147,7 @@ function submitStatsFailed(req, res) {
 		return;
 	}
 
-	console.log('Received CircleCI failure webhook notification:', req.body);
+	console.log('Received CI failure webhook notification:', req.body);
 	const build = { ...req.body.payload, success: false };
 	db.insertCircleBuild(build)
 		.then(() => res.json({}))
