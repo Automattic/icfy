@@ -288,17 +288,32 @@ exports.getChunkGroupChartData = async (period, chunks, loadedChunks, branch = '
 	return _.sortBy(summedChunks, 'created_at');
 };
 
-const getPushStats = sha =>
-	K('stats')
+async function checkIfPushProcessed(sha) {
+	const processed = await K('pushes')
+		.select('sha')
+		.where('sha', sha)
+		.andWhere('processed', true);
+
+	if (processed.length === 0) {
+		throw new Error(`Push ${sha} doesn't exist or is not processed`);
+	}
+}
+
+async function getPushStats(sha) {
+	await checkIfPushProcessed(sha);
+	return K('stats')
 		.select()
 		.where('sha', sha);
+}
 
 exports.getPushStats = getPushStats;
 
-const getPushGroups = sha =>
-	K('chunk_groups')
+async function getPushGroups(sha) {
+	await checkIfPushProcessed(sha);
+	return K('chunk_groups')
 		.select(['chunk', 'sibling'])
 		.where('sha', sha);
+}
 
 exports.getPushDelta = function(first, second, options) {
 	// stats for first, second

@@ -1,4 +1,4 @@
-const { log, sleep } = require('./utils');
+const { log, sleep, getPRNumber } = require('./utils');
 const builder = require('./build-ci');
 const db = require('./db');
 const commentOnGithub = require('./comments');
@@ -39,7 +39,11 @@ async function processQueue() {
 			if (stats) await recordBundleStats(stats);
 
 			await db.markPushAsProcessed(push.sha);
-			await commentOnGithub(push.sha);
+			try {
+				await commentOnGithub(push.sha);
+			} catch (error) {
+				log(`Could not post comment on push ${push.sha} (PR #${getPRNumber(push)})`, error);
+			}
 		}
 		log(`Finished processing build queue of ${pushes.length} pushes`);
 
