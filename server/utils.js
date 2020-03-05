@@ -11,4 +11,13 @@ exports.timed = function(promise, label) {
 	console.time(label);
 	promise.finally(() => console.timeEnd(label));
 	return promise;
-}
+};
+
+exports.getPRNumber = function(push) {
+	const prNumberMatch = /\(#([0-9]+)\)$/.exec(push.message);
+	if (!prNumberMatch) {
+		return null;
+	}
+
+	return prNumberMatch[1];
+};

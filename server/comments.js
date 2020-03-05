@@ -1,5 +1,5 @@
 const _ = require('lodash');
-const { log } = require('./utils');
+const { log, getPRNumber } = require('./utils');
 const db = require('./db');
 const gh = require('./github');
 const printDeltaTable = require('./delta-table');
@@ -155,15 +155,6 @@ async function statsMessage(push) {
 	);
 
 	return message.join('\n');
-}
-
-function getPRNumber(push) {
-	const prNumberMatch = /\(#([0-9]+)\)$/.exec(push.message);
-	if (!prNumberMatch) {
-		return null;
-	}
-
-	return prNumberMatch[1];
 }
 
 async function getOurPRCommentIDs(repo, prNum) {
