@@ -8,9 +8,21 @@ function Table({ header, rows }) {
 	return (
 		<table className="table">
 			<thead>
-				<tr>{header.map(col => <th>{col}</th>)}</tr>
+				<tr>
+					{header.map((col) => (
+						<th>{col}</th>
+					))}
+				</tr>
 			</thead>
-			<tbody>{rows.map(row => <tr>{row.map(col => <td>{col}</td>)}</tr>)}</tbody>
+			<tbody>
+				{rows.map((row) => (
+					<tr>
+						{row.map((col) => (
+							<td>{col}</td>
+						))}
+					</tr>
+				))}
+			</tbody>
 		</table>
 	);
 }
@@ -63,13 +75,13 @@ class BuildLogView extends React.Component {
 		this.setState({ buildlog: response.data.buildlog });
 	}
 
-	changeCount = event => {
+	changeCount = (event) => {
 		const count = event.target.value;
 		this.props.history.push({ search: buildSearchQuery(count, this.state.branch) });
 		this.setState({ count });
 	};
 
-	changeBranch = event => {
+	changeBranch = (event) => {
 		const branch = event.target.value;
 		this.props.history.push({ search: buildSearchQuery(this.state.count, branch) });
 		this.setState({ branch });
@@ -92,8 +104,18 @@ class BuildLogView extends React.Component {
 		);
 	}
 
-	renderCircleBuild(buildNum) {
-		return <a href={`https://circleci.com/gh/Automattic/wp-calypso/${buildNum}`}>{buildNum}</a>;
+	renderCILink(service, buildNum) {
+		const repo = 'Automattic/wp-calypso';
+		const label = `${service}/${buildNum}`;
+		let link = null;
+		switch (service) {
+			case 'circle':
+				link = `https://circleci.com/gh/${repo}/${buildNum}`;
+			case 'github':
+				link = `https:/github.com/${repo}/actions/runs/${buildNum}`;
+		}
+
+		return link ? <a href={link}>{label}</a> : <span>{label}</span>;
 	}
 
 	renderSuccess(success) {
@@ -108,8 +130,8 @@ class BuildLogView extends React.Component {
 		}
 
 		const header = ['build_num', 'success', 'branch', 'sha'];
-		const rows = buildlog.map(build => [
-			this.renderCircleBuild(build.build_num),
+		const rows = buildlog.map((build) => [
+			this.renderCILink(build.service, build.build_num),
 			this.renderSuccess(build.success),
 			build.branch,
 			this.renderSha(build.sha),
