@@ -21,18 +21,15 @@ async function getLastMasterPushSha() {
 	return lastPushArr[0].sha;
 }
 
-exports.getKnownChunks = async function() {
+exports.getKnownChunks = async function () {
 	const lastPushSha = await getLastMasterPushSha();
 
-	const lastPushChunks = await K.select()
-		.distinct('chunk')
-		.from('stats')
-		.where('sha', lastPushSha);
+	const lastPushChunks = await K.select().distinct('chunk').from('stats').where('sha', lastPushSha);
 
-	return lastPushChunks.map(row => row.chunk);
+	return lastPushChunks.map((row) => row.chunk);
 };
 
-exports.getKnownChunkGroups = async function() {
+exports.getKnownChunkGroups = async function () {
 	const lastPushSha = await getLastMasterPushSha();
 
 	const lastPushChunkGroups = await K.select()
@@ -40,17 +37,12 @@ exports.getKnownChunkGroups = async function() {
 		.from('chunk_groups')
 		.where('sha', lastPushSha);
 
-	return lastPushChunkGroups.map(row => row.chunk);
+	return lastPushChunkGroups.map((row) => row.chunk);
 };
-exports.getPush = sha =>
-	K('pushes')
-		.select()
-		.where('sha', sha);
+exports.getPush = (sha) => K('pushes').select().where('sha', sha);
 
-exports.insertPush = async push => {
-	const [existingPush] = await K('pushes')
-		.select()
-		.where('sha', push.sha);
+exports.insertPush = async (push) => {
+	const [existingPush] = await K('pushes').select().where('sha', push.sha);
 
 	if (existingPush) {
 		return false;
@@ -61,31 +53,19 @@ exports.insertPush = async push => {
 	return true;
 };
 
-exports.getPushesForBranch = branch =>
-	K('pushes')
-		.select()
-		.where('branch', branch)
-		.orderBy('id', 'desc')
-		.limit(100);
+exports.getPushesForBranch = (branch) =>
+	K('pushes').select().where('branch', branch).orderBy('id', 'desc').limit(100);
 
-exports.getQueuedPushes = () =>
-	K('pushes')
-		.select()
-		.where('processed', false);
+exports.getQueuedPushes = () => K('pushes').select().where('processed', false);
 
-exports.markPushAsProcessed = sha =>
-	K('pushes')
-		.update('processed', true)
-		.where('sha', sha);
+exports.markPushAsProcessed = (sha) => K('pushes').update('processed', true).where('sha', sha);
 
 exports.setPushAncestor = (sha, ancestorSha) =>
-	K('pushes')
-		.update('ancestor', ancestorSha)
-		.where('sha', sha);
+	K('pushes').update('ancestor', ancestorSha).where('sha', sha);
 
-exports.insertChunkStats = stats => K('stats').insert(stats);
+exports.insertChunkStats = (stats) => K('stats').insert(stats);
 
-exports.insertChunkGroups = chunkGroups => K('chunk_groups').insert(chunkGroups);
+exports.insertChunkGroups = (chunkGroups) => K('chunk_groups').insert(chunkGroups);
 
 function periodToLastCount(period) {
 	let lastCount = 200;
@@ -132,7 +112,7 @@ const EQUIVALENT_CHUNK_NAMES = [
 ];
 
 function chunkWhere(chunk) {
-	const equivalentNames = EQUIVALENT_CHUNK_NAMES.find(names => names.includes(chunk));
+	const equivalentNames = EQUIVALENT_CHUNK_NAMES.find((names) => names.includes(chunk));
 	if (equivalentNames) {
 		return ['in', equivalentNames];
 	}
@@ -142,7 +122,7 @@ function chunkWhere(chunk) {
 
 function addEquivalentChunks(chunks) {
 	return chunks.reduce((output, chunk) => {
-		const equivalentNames = EQUIVALENT_CHUNK_NAMES.find(names => names.includes(chunk));
+		const equivalentNames = EQUIVALENT_CHUNK_NAMES.find((names) => names.includes(chunk));
 		if (equivalentNames) {
 			return [...output, ...equivalentNames];
 		}
@@ -262,13 +242,13 @@ exports.getChunkGroupChartData = async (period, chunks, loadedChunks, branch = '
 		// requested chunks: filter out the ones in the exclusion list
 		const chunksToSum = _.reject(
 			chunksToInclude,
-			c => _.includes(loadedChunks, c.chunk) || _.find(siblingsToExclude, { sibling: c.chunk })
+			(c) => _.includes(loadedChunks, c.chunk) || _.find(siblingsToExclude, { sibling: c.chunk })
 		);
 
 		// requested chunks' siblings: filter out the root chunks and the exclusion list
 		const siblingsToSum = _.reject(
 			siblingsToInclude,
-			c =>
+			(c) =>
 				_.includes(loadedChunks, c.sibling) ||
 				_.find(chunksToInclude, { chunk: c.sibling }) ||
 				_.find(siblingsToExclude, { sibling: c.sibling })
@@ -289,10 +269,7 @@ exports.getChunkGroupChartData = async (period, chunks, loadedChunks, branch = '
 };
 
 async function checkIfPushProcessed(sha) {
-	const processed = await K('pushes')
-		.select('sha')
-		.where('sha', sha)
-		.andWhere('processed', true);
+	const processed = await K('pushes').select('sha').where('sha', sha).andWhere('processed', true);
 
 	if (processed.length === 0) {
 		throw new Error(`Push ${sha} doesn't exist or is not processed`);
@@ -301,21 +278,17 @@ async function checkIfPushProcessed(sha) {
 
 async function getPushStats(sha) {
 	await checkIfPushProcessed(sha);
-	return K('stats')
-		.select()
-		.where('sha', sha);
+	return K('stats').select().where('sha', sha);
 }
 
 exports.getPushStats = getPushStats;
 
 async function getPushGroups(sha) {
 	await checkIfPushProcessed(sha);
-	return K('chunk_groups')
-		.select(['chunk', 'sibling'])
-		.where('sha', sha);
+	return K('chunk_groups').select(['chunk', 'sibling']).where('sha', sha);
 }
 
-exports.getPushDelta = function(first, second, options) {
+exports.getPushDelta = function (first, second, options) {
 	// stats for first, second
 	const statsRequest = Promise.all([getPushStats(first), getPushStats(second)]);
 	const groupsRequest = Promise.all([getPushGroups(first), getPushGroups(second)]);
@@ -323,9 +296,11 @@ exports.getPushDelta = function(first, second, options) {
 	const chunksDelta = statsRequest.then(([firstStats, secondStats]) =>
 		deltaFromStats(firstStats, secondStats)
 	);
-	const groupsDelta = Promise.all([statsRequest, groupsRequest]).then(
-		([[firstStats, secondStats], [firstGroups, secondGroups]]) =>
-			deltaFromStatsAndGroups(firstStats, firstGroups, secondStats, secondGroups, options)
+	const groupsDelta = Promise.all([
+		statsRequest,
+		groupsRequest,
+	]).then(([[firstStats, secondStats], [firstGroups, secondGroups]]) =>
+		deltaFromStatsAndGroups(firstStats, firstGroups, secondStats, secondGroups, options)
 	);
 
 	return Promise.all([chunksDelta, groupsDelta]).then(([chunks, groups]) => ({ chunks, groups }));
@@ -344,19 +319,12 @@ function applyBranchFilter(query, branch) {
 }
 
 exports.getPushLog = (count, branch) => {
-	const query = K('pushes')
-		.select()
-		.orderBy('id', 'desc')
-		.limit(count);
+	const query = K('pushes').select().orderBy('id', 'desc').limit(count);
 
 	return applyBranchFilter(query, branch);
 };
 
-exports.removePush = sha =>
-	K('pushes')
-		.delete()
-		.where('sha', sha)
-		.andWhere('processed', false);
+exports.removePush = (sha) => K('pushes').delete().where('sha', sha).andWhere('processed', false);
 
 function tableForCIService(from) {
 	switch (from) {
@@ -369,33 +337,30 @@ function tableForCIService(from) {
 	}
 }
 
-exports.insertCIBuild = (from = 'circle', build) => {
-	const table = tableForCIService(from);
+exports.insertCIBuild = async (service, build) => {
+	const table = tableForCIService(service);
 	if (!table) {
-		return Promise.reject(new Error(`Unknown CI service: ${from}`));
+		throw new Error(`Unknown CI service: ${service}`);
 	}
-	return K(table).insert(build);
+	const legacyInsert = K(table).insert(build);
+	const created_at = new Date().toISOString();
+	const insert = K('ci_builds').insert({ ...build, service, created_at });
+	await Promise.all([legacyInsert, insert]);
 };
 
-exports.getCIBuilds = async sha => {
+exports.getCIBuilds = async (sha) => {
 	const services = ['circle', 'github'];
-	const queries = services.map(async from => {
-		const table = tableForCIService(from);
-		const builds = await K(table)
-			.select()
-			.where('sha', sha);
-		return builds.map(build => ({ ...build, from }));
+	const queries = services.map(async (service) => {
+		const table = tableForCIService(service);
+		const builds = await K(table).select().where('sha', sha);
+		return builds.map((build) => ({ ...build, service }));
 	});
 	const results = await Promise.all(queries);
 	return results.reduce((a, b) => [...a, ...b]);
 };
 
-exports.getCIBuildLog = (count, branch, from) => {
-	const table = tableForCIService(from);
-	const query = K(table)
-		.select()
-		.orderBy('build_num', 'desc')
-		.limit(count);
+exports.getCIBuildLog = (count, branch) => {
+	const query = K('ci_builds').select().orderBy('created_at', 'desc').limit(count);
 
 	return applyBranchFilter(query, branch);
 };

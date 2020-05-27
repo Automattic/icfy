@@ -25,7 +25,7 @@ async function processPush(push) {
 	}
 
 	// Download stats from CI artifacts
-	const builder = getBuilder(build.from);
+	const builder = getBuilder(build.service);
 	if (!builder) {
 		return null;
 	}
