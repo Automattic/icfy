@@ -326,38 +326,14 @@ exports.getPushLog = (count, branch) => {
 
 exports.removePush = (sha) => K('pushes').delete().where('sha', sha).andWhere('processed', false);
 
-function tableForCIService(from) {
-	switch (from) {
-		case 'circle':
-			return 'circle_builds';
-		case 'github':
-			return 'github_builds';
-		default:
-			return null;
-	}
-}
-
-exports.insertCIBuild = async (service, build) => {
-	const table = tableForCIService(service);
-	if (!table) {
-		throw new Error(`Unknown CI service: ${service}`);
-	}
-	const legacyInsert = K(table).insert(build);
-	const created_at = new Date().toISOString();
-	const insert = K('ci_builds').insert({ ...build, service, created_at });
-	await Promise.all([legacyInsert, insert]);
-};
-
-exports.getCIBuilds = async (sha) => {
-	const services = ['circle', 'github'];
-	const queries = services.map(async (service) => {
-		const table = tableForCIService(service);
-		const builds = await K(table).select().where('sha', sha);
-		return builds.map((build) => ({ ...build, service }));
+exports.insertCIBuild = (service, build) =>
+	K('ci_builds').insert({
+		...build,
+		service,
+		created_at: new Date().toISOString(),
 	});
-	const results = await Promise.all(queries);
-	return results.reduce((a, b) => [...a, ...b]);
-};
+
+exports.getCIBuilds = (sha) => K('ci_builds').select().where('sha', sha);
 
 exports.getCIBuildLog = (count, branch) => {
 	const query = K('ci_builds').select().orderBy('created_at', 'desc').limit(count);
