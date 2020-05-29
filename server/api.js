@@ -29,6 +29,9 @@ app.post('/submit-stats-failed', submitStatsFailed);
 // API for webhooks from GitHub
 app.post('/hooks-github', githubWebhook);
 
+// Serve static assets with the React frontend
+app.use(express.static('public'));
+
 app.listen(port, () => console.log('API service is running on port', port));
 
 function cors(req, res, next) {
