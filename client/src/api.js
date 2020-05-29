@@ -1,7 +1,6 @@
 import { get } from 'axios';
 
-// const apiURL = 'http://localhost:5000';
-const apiURL = 'http://api.iscalypsofastyet.com:5000';
+const apiURL = '';
 
 export function buildQuery(query) {
 	let queryString = '';
