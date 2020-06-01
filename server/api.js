@@ -32,6 +32,10 @@ app.post('/hooks-github', githubWebhook);
 // Serve static assets with the React frontend
 app.use(express.static('public'));
 
+app.get('/p/*', function (req, res) {
+	res.sendFile('public/index.html', { root: __dirname });
+});
+
 app.listen(port, () => console.log('API service is running on port', port));
 
 function cors(req, res, next) {
@@ -41,20 +45,20 @@ function cors(req, res, next) {
 	next();
 }
 
-const reportError = res => error => {
+const reportError = (res) => (error) => {
 	console.error(error);
 	res.status(500).send('Internal Error');
 };
 
 function getChunks(req, res) {
 	db.getKnownChunks()
-		.then(chunks => res.json({ chunks }))
+		.then((chunks) => res.json({ chunks }))
 		.catch(reportError(res));
 }
 
 function getChunkGroups(req, res) {
 	db.getKnownChunkGroups()
-		.then(chunkGroups => res.json({ chunkGroups }))
+		.then((chunkGroups) => res.json({ chunkGroups }))
 		.catch(reportError(res));
 }
 
@@ -62,7 +66,7 @@ function getChart(req, res) {
 	const { period, chunk, branch } = req.query;
 
 	db.getChartData(period, chunk, branch)
-		.then(data => res.json({ data }))
+		.then((data) => res.json({ data }))
 		.catch(reportError(res));
 }
 
@@ -70,7 +74,7 @@ function getChunkGroupChart(req, res) {
 	const { period, chunks, loadedChunks, branch } = req.query;
 
 	db.getChunkGroupChartData(period, chunks, loadedChunks, branch)
-		.then(data => res.json({ data }))
+		.then((data) => res.json({ data }))
 		.catch(reportError(res));
 }
 
@@ -86,7 +90,7 @@ function getPushes(req, res) {
 	const { branch } = req.query;
 
 	db.getPushesForBranch(branch)
-		.then(pushes => res.json({ pushes }))
+		.then((pushes) => res.json({ pushes }))
 		.catch(reportError(res));
 }
 
@@ -94,7 +98,7 @@ function getPushStats(req, res) {
 	const { sha } = req.query;
 
 	db.getPushStats(sha)
-		.then(stats => res.json({ stats }))
+		.then((stats) => res.json({ stats }))
 		.catch(reportError(res));
 }
 
@@ -102,7 +106,7 @@ function getPushDelta(req, res) {
 	const { first, second } = req.query;
 
 	db.getPushDelta(first, second)
-		.then(delta => res.json(delta))
+		.then((delta) => res.json(delta))
 		.catch(reportError(res));
 }
 
@@ -110,7 +114,7 @@ function getPushLog(req, res) {
 	const { count = 20, branch } = req.query;
 
 	db.getPushLog(count, branch)
-		.then(pushlog => res.json({ pushlog }))
+		.then((pushlog) => res.json({ pushlog }))
 		.catch(reportError(res));
 }
 
@@ -118,7 +122,7 @@ function getBuildLog(req, res) {
 	const { count = 20, branch, from = 'circle' } = req.query;
 
 	db.getCIBuildLog(count, branch, from)
-		.then(buildlog => res.json({ buildlog }))
+		.then((buildlog) => res.json({ buildlog }))
 		.catch(reportError(res));
 }
 
