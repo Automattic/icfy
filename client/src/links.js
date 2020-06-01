@@ -7,7 +7,7 @@ function pathJoin(...parts) {
 
 export const PushLink = ({ sha, prevSha, len }) => {
 	const displaySha = len ? sha.slice(0, len) : sha;
-	return <Link to={pathJoin(`/push/${sha}`, prevSha)}>{displaySha}</Link>;
+	return <Link to={pathJoin(`/p/push/${sha}`, prevSha)}>{displaySha}</Link>;
 };
 
 export const GitHubLink = ({ sha }) => (

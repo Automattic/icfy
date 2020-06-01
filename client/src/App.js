@@ -13,11 +13,11 @@ const App = () => (
 	<BrowserRouter>
 		<Switch>
 			<Route exact path="/" component={ChartView} />
-			<Route path="/push/:sha/:prevSha?" component={PushView} />
-			<Route path="/branch" component={BranchView} />
-			<Route path="/pushlog" component={PushLogView} />
-			<Route path="/buildlog" component={BuildLogView} />
-			<Route path="/chunkgroups" component={ChunkGroupsChartView} />
+			<Route path="/p/push/:sha/:prevSha?" component={PushView} />
+			<Route path="/p/branch" component={BranchView} />
+			<Route path="/p/pushlog" component={PushLogView} />
+			<Route path="/p/buildlog" component={BuildLogView} />
+			<Route path="/p/chunkgroups" component={ChunkGroupsChartView} />
 		</Switch>
 	</BrowserRouter>
 );
