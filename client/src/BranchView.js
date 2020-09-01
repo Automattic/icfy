@@ -52,7 +52,7 @@ class BranchView extends React.Component {
 	loadBranches() {
 		getBranches().then(branches => {
 			const branchList = branches
-				.filter(branch => branch !== 'master')
+				.filter(branch => branch !== 'trunk')
 				.map(option => ({ value: option, label: option }));
 			this.setState({ branchList });
 		});

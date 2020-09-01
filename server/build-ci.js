@@ -41,7 +41,7 @@ async function processPush(push) {
 	};
 
 	// determine the ancestor
-	if (build.ancestor && push.branch !== 'master' && !push.ancestor) {
+	if (build.ancestor && push.branch !== 'trunk' && !push.ancestor) {
 		log(`ancestor of ${push.branch} (${push.sha}): [${build.ancestor}]`);
 		result.ancestor = build.ancestor;
 	}

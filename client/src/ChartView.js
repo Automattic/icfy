@@ -19,7 +19,7 @@ const PERIODS = [
 const DEFAULT_CHUNKS = 'entry-main';
 const DEFAULT_SIZE = 'gzip_size';
 const DEFAULT_PERIOD = 'last200';
-const DEFAULT_BRANCH = 'master';
+const DEFAULT_BRANCH = 'trunk';
 
 const chunksToString = chunks => (chunks ? chunks.join(',') : DEFAULT_CHUNKS);
 const chunksFromString = chunks => (chunks || DEFAULT_CHUNKS).split(',');

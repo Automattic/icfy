@@ -22,7 +22,7 @@ class ChunkGroupsChartView extends React.Component {
 		super(props);
 
 		const searchParams = new URLSearchParams(props.location.search);
-		const selectedBranch = searchParams.get('branch') || 'master';
+		const selectedBranch = searchParams.get('branch') || 'trunk';
 
 		this.state = {
 			chunkGroups: null,

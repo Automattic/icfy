@@ -173,7 +173,7 @@ module.exports = async function commentOnGithub(sha) {
 		return;
 	}
 
-	if (push.branch === 'master' || !push.ancestor) {
+	if (push.branch === 'trunk' || !push.ancestor) {
 		log('Push not eligible for comment:', sha);
 		return;
 	}

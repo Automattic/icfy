@@ -38,8 +38,8 @@ const COUNTS = [
 const DEFAULT_BRANCH = '*';
 const BRANCHES = [
 	{ value: '*', name: 'all branches' },
-	{ value: 'master', name: 'master branch' },
-	{ value: '!master', name: 'non-master branches' },
+	{ value: 'trunk', name: 'trunk branch' },
+	{ value: '!trunk', name: 'non-trunk branches' },
 ];
 
 function buildSearchQuery(count, branch) {
