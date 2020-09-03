@@ -79,9 +79,7 @@ function periodToLastCount(period) {
 async function getPushShas(branch, lastCount) {
 	const trunkPushesQuery = K('pushes')
 		.select(['sha', 'created_at'])
-		.where({ processed: true })
-		// for backwards compat we need to check for both trunk and master
-		.whereIn('branch', ['trunk', 'master'])
+		.where({ processed: true, branch: 'trunk' })
 		.orderBy('created_at', 'desc')
 		.limit(lastCount);
 
