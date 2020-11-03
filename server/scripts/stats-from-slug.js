@@ -1,7 +1,7 @@
 const { get } = require('axios');
 const { readFileSync } = require('fs');
 
-const apiURL = 'http://api.iscalypsofastyet.com:5000';
+const apiURL = 'http://iscalypsofastyet.com';
 
 function statsFromAPI(sha) {
 	return get(`${apiURL}/pushstats?sha=${sha}`).then(response => response.data.stats);

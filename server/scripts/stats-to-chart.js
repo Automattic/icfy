@@ -3,8 +3,8 @@ const { readStatsFromFile, getViewerData } = require('webpack-bundle-analyzer/li
 
 function chartFromFile(filename) {
 	const stats = readStatsFromFile(filename);
-	const chart = getViewerData(stats, './public');
-	writeFileSync('chart.json', JSON.stringify(chart, null, 2));
+	const chart = getViewerData(stats, './public/evergreen');
+	writeFileSync('client/chart.json', JSON.stringify(chart, null, 2));
 }
 
-chartFromFile('stats.json');
+chartFromFile('client/stats.json');
