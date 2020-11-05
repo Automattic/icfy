@@ -1,6 +1,8 @@
+const fs = require('fs');
+const path = require('path');
+const { spawn } = require('child_process');
+const rimraf = require('rimraf');
 const _ = require('lodash');
-const { get } = require('axios');
-const unzipper = require('unzipper');
 const { log, timed } = require('./utils');
 const gh = require('./github');
 
@@ -16,63 +18,94 @@ async function downloadArtifactList(buildNum) {
 	}
 }
 
-async function readEntry(entry) {
-	log('Reading file', entry.path);
-	const data = await entry.buffer();
-	log('Parsing file', entry.path);
-	const json = JSON.parse(data);
-	log('Finished reading and parsing file', entry.path);
-	return json;
+async function downloadArtifact(artifactId, workDir, filename) {
+	log(`Downloading archive for artifact ID ${artifactId}`);
+	const zipStream = await gh.getActionRunArtifactArchiveStream(REPO, artifactId);
+
+	const archiveFile = path.join(workDir, filename);
+	const fileStream = fs.createWriteStream(archiveFile);
+	zipStream.data.pipe(fileStream);
+
+	await new Promise((resolve, reject) => {
+		fileStream.on('close', resolve);
+		fileStream.on('error', reject);
+	});
+}
+
+function unzip(workDir, filename) {
+	return new Promise((resolve, reject) => {
+		const proc = spawn('unzip', [filename], {
+			cwd: workDir,
+			stdio: 'ignore',
+		});
+
+		proc.on('close', (code) => {
+			if (code === 0) {
+				resolve();
+			} else {
+				reject(`unzip exited with code ${code}`);
+			}
+		});
+
+		proc.on('error', (err) => reject(`unzip failed to execute: ${err}`));
+	});
+}
+
+async function parseJson(workDir, filename) {
+	return JSON.parse(await fs.promises.readFile(path.join(workDir, filename)));
+}
+
+function cleanup(workDir) {
+	return new Promise((resolve) =>
+		rimraf(workDir, (err) => {
+			if (err) return reject(err);
+			resolve();
+		})
+	);
 }
 
 async function processBuild(buildNum) {
-	// get the artifact info for the given build and extract the ZIP download URL
-	log(`Downloading artifact list for build number ${buildNum}`);
-	const artifacts = await downloadArtifactList(buildNum);
-	if (!artifacts) {
-		return null;
-	}
-
-	const icfyArtifact = _.find(artifacts.artifacts, { name: 'icfy' });
-	if (!icfyArtifact) {
-		log(`No ICFY stats in artifact list of GitHub Action run ${REPO}/${buildNum}`);
-		return null;
-	}
+	const workDir = String(buildNum);
 
 	const result = {
 		stats: null,
 		chart: null,
 	};
 
-	// create the ZIP download stream
 	try {
-		log(`Downloading archive for ${REPO}/${buildNum}, artifact ID ${icfyArtifact.id}`);
-		const zipResponse = await gh.getActionRunArtifactArchiveStream(REPO, icfyArtifact.id);
+		log(`creating working directory for build number ${buildNum}`);
+		await fs.promises.mkdir(workDir);
 
-		log(`Reading and extracting archive for ${REPO}/${buildNum}, artifact ID ${icfyArtifact.id}`);
-		const zipStream = zipResponse.data;
+		// get the artifact info for the given build and extract the ZIP download URL
+		log(`Downloading artifact list for build number ${buildNum}`);
+		const artifacts = await timed(downloadArtifactList(buildNum), 'downloadArtifactList');
+		if (!artifacts) {
+			return null;
+		}
 
-		// extract the ZIP contents
-		const zip = zipStream.pipe(unzipper.Parse());
-		zip.on('entry', async entry => {
-			const { path } = entry;
-			switch (path) {
-				case 'stats.json':
-					result.stats = await readEntry(entry);
-					break;
-				case 'chart.json':
-					result.chart = await readEntry(entry);
-					break;
-				default:
-					log('Ignoring unexpected file in the artifact archive', path);
-					entry.autodrain();
-			}
-		});
-		log('waiting to finish');
-		await zip.promise();
+		const icfyArtifact = _.find(artifacts.artifacts, { name: 'icfy' });
+		if (!icfyArtifact) {
+			log(`No ICFY stats in artifact list of GitHub Action run ${REPO}/${buildNum}`);
+			return null;
+		}
+
+		log(`Downloading archive for ${buildNum}, artifact ID ${icfyArtifact.id}`);
+		await timed(downloadArtifact(icfyArtifact.id, workDir, 'archive.zip'), 'downloadArtifact');
+
+		log(`Extracting archive for ${buildNum}, artifact ID ${icfyArtifact.id}`);
+		await timed(unzip(workDir, 'archive.zip'), 'unzip');
+
+		log('Parsing stats.json');
+		result.stats = await timed(parseJson(workDir, 'stats.json'), 'parseStats');
+
+		log('Parsing chart.json');
+		result.chart = await timed(parseJson(workDir, 'chart.json'), 'parseChart');
+
 		log(`Finished reading and extracting archive for artifact ID ${icfyArtifact.id}`);
 	} catch (error) {
-		log(`could not download and extract archive for artifact ID ${icfyArtifact.id}:`, error);
+		log(`could not download and extract archive for build number ${buildNum}:`, error);
+	} finally {
+		await cleanup(workDir);
 	}
 
 	if (!result.stats || !result.chart) {
