@@ -9,7 +9,7 @@ const WATERMARK = 'c52822';
 const COMMENT_USER = 'matticbot';
 
 function groupByArea(deltas) {
-	return _.groupBy(deltas, delta => {
+	return _.groupBy(deltas, (delta) => {
 		if (delta.name.startsWith('moment-locale-')) {
 			return 'moment-locale';
 		}
@@ -127,9 +127,9 @@ async function statsMessage(push) {
 
 			message.push('');
 			message.push(area.desc);
-			if (area.desc_inc && _.every(areaDelta, delta => delta.deltaSizes.gzip_size > 0)) {
+			if (area.desc_inc && _.every(areaDelta, (delta) => delta.deltaSizes.gzip_size > 0)) {
 				message.push(area.desc_inc);
-			} else if (area.desc_dec && _.every(areaDelta, delta => delta.deltaSizes.gzip_size < 0)) {
+			} else if (area.desc_dec && _.every(areaDelta, (delta) => delta.deltaSizes.gzip_size < 0)) {
 				message.push(area.desc_dec);
 			}
 
@@ -160,9 +160,9 @@ async function statsMessage(push) {
 async function getOurPRCommentIDs(repo, prNum) {
 	const prComments = await gh.getPRComments(repo, prNum);
 	return prComments.data
-		.filter(comment => comment.user.login === COMMENT_USER)
-		.filter(comment => comment.body.includes(watermarkString(WATERMARK)))
-		.map(comment => comment.id);
+		.filter((comment) => comment.user.login === COMMENT_USER)
+		.filter((comment) => comment.body.includes(watermarkString(WATERMARK)))
+		.map((comment) => comment.id);
 }
 
 module.exports = async function commentOnGithub(sha) {
@@ -173,7 +173,7 @@ module.exports = async function commentOnGithub(sha) {
 		return;
 	}
 
-	if (push.branch === 'master' || !push.ancestor) {
+	if (['master', 'trunk'].includes(push.branch) || !push.ancestor) {
 		log('Push not eligible for comment:', sha);
 		return;
 	}

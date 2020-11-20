@@ -6,23 +6,41 @@ const { deltaFromStats, deltaFromStatsAndGroups } = require('./delta');
 
 const K = knex(config);
 
-// find the SHA of last processed master push
-async function getLastMasterPushSha() {
+// treat `master` and `trunk` branches as equivalent and always match both
+const TRUNK_BRANCHES = ['master', 'trunk'];
+
+function branchWhere(branch) {
+	let neg = false;
+	if (branch[0] === '!') {
+		branch = branch.slice(1);
+		neg = true;
+	}
+
+	if (TRUNK_BRANCHES.includes(branch)) {
+		return [neg ? 'not in' : 'in', TRUNK_BRANCHES];
+	} else {
+		return [neg ? '!=' : '=', branch];
+	}
+}
+
+// find the SHA of last processed trunk push
+async function getLastTrunkPushSha() {
 	const lastPushArr = await K('pushes')
 		.select('sha')
-		.where({ branch: 'master', processed: true })
+		.where('branch', ...branchWhere('trunk'))
+		.andWhere('processed', true)
 		.orderBy('created_at', 'desc')
 		.limit(1);
 
 	if (lastPushArr.length === 0) {
-		throw new Error('last processed master push not found');
+		throw new Error('last processed trunk push not found');
 	}
 
 	return lastPushArr[0].sha;
 }
 
 exports.getKnownChunks = async function () {
-	const lastPushSha = await getLastMasterPushSha();
+	const lastPushSha = await getLastTrunkPushSha();
 
 	const lastPushChunks = await K.select().distinct('chunk').from('stats').where('sha', lastPushSha);
 
@@ -30,7 +48,7 @@ exports.getKnownChunks = async function () {
 };
 
 exports.getKnownChunkGroups = async function () {
-	const lastPushSha = await getLastMasterPushSha();
+	const lastPushSha = await getLastTrunkPushSha();
 
 	const lastPushChunkGroups = await K.select()
 		.distinct('chunk')
@@ -54,7 +72,11 @@ exports.insertPush = async (push) => {
 };
 
 exports.getPushesForBranch = (branch) =>
-	K('pushes').select().where('branch', branch).orderBy('id', 'desc').limit(100);
+	K('pushes')
+		.select()
+		.where('branch', ...branchWhere(branch))
+		.orderBy('id', 'desc')
+		.limit(100);
 
 exports.getQueuedPushes = () => K('pushes').select().where('processed', false);
 
@@ -77,33 +99,35 @@ function periodToLastCount(period) {
 }
 
 async function getPushShas(branch, lastCount) {
-	const masterPushesQuery = K('pushes')
+	const trunkPushesQuery = K('pushes')
 		.select(['sha', 'created_at'])
-		.where({ branch: 'master', processed: true })
+		.where('processed', true)
+		.andWhere('branch', ...branchWhere('trunk'))
 		.orderBy('created_at', 'desc')
 		.limit(lastCount);
 
-	if (branch === 'master') {
-		return masterPushesQuery;
+	if (TRUNK_BRANCHES.includes(branch)) {
+		return trunkPushesQuery;
 	}
 
 	const [patchBranchPush] = await K('pushes')
 		.select(['sha', 'created_at', 'ancestor'])
-		.where({ branch, processed: true })
+		.where('branch', ...branchWhere(branch))
+		.andWhere('processed', true)
 		.orderBy('created_at', 'desc')
 		.limit(1);
 
 	if (!patchBranchPush || !patchBranchPush.ancestor) {
-		return masterPushesQuery;
+		return trunkPushesQuery;
 	}
 
-	const masterPushes = await masterPushesQuery;
-	const branchPointPushIndex = _.findIndex(masterPushes, { sha: patchBranchPush.ancestor });
+	const trunkPushes = await trunkPushesQuery;
+	const branchPointPushIndex = _.findIndex(trunkPushes, { sha: patchBranchPush.ancestor });
 	if (branchPointPushIndex !== -1) {
-		masterPushes.splice(0, branchPointPushIndex, patchBranchPush);
+		trunkPushes.splice(0, branchPointPushIndex, patchBranchPush);
 	}
 
-	return masterPushes;
+	return trunkPushes;
 }
 
 const EQUIVALENT_CHUNK_NAMES = [
@@ -131,7 +155,7 @@ function addEquivalentChunks(chunks) {
 	}, []);
 }
 
-exports.getChartData = async (period, chunk, branch = 'master') => {
+exports.getChartData = async (period, chunk, branch = 'trunk') => {
 	const lastCount = periodToLastCount(period);
 	const pushes = await timed(getPushShas(branch, lastCount), 'getPushShas');
 	const shas = _.map(pushes, 'sha');
@@ -198,7 +222,7 @@ function getSiblingsWithSizes(shas, chunks) {
  *      we just decide not to add them.
  * 4. sum the chunks on a sha by sha basis
  */
-exports.getChunkGroupChartData = async (period, chunks, loadedChunks, branch = 'master') => {
+exports.getChunkGroupChartData = async (period, chunks, loadedChunks, branch = 'trunk') => {
 	const lastCount = periodToLastCount(period);
 
 	// parse the string query arguments
@@ -309,9 +333,9 @@ exports.getPushDelta = function (first, second, options) {
 function applyBranchFilter(query, branch) {
 	if (branch && branch !== '*') {
 		if (branch[0] === '!') {
-			query.whereNot('branch', branch.slice(1));
+			query.where('branch', ...branchWhere(branch));
 		} else {
-			query.where('branch', branch);
+			query.where('branch', ...branchWhere(branch));
 		}
 	}
 

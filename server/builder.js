@@ -23,10 +23,11 @@ async function processQueue() {
 
 				log(`Push ${push.sha} in ${push.branch} at ${push.created_at.toISOString()} not processed`);
 
-				if (push.branch !== 'master' && age > 24) {
+				const isMainBranch = ['master','trunk'].includes(push.branch);
+				if (!isMainBranch && age > 24) {
 					log(`Removing push ${push.sha} because it's older than 24 hours (${age}h)`);
 					await db.removePush(push.sha);
-				} else if (push.branch === 'master' && age > 240) {
+				} else if (isMainBranch && age > 240) {
 					log(`Removing push ${push.sha} because it's older than 10 days (${age}h)`);
 					await db.removePush(push.sha);
 				}

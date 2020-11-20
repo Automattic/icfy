@@ -50,10 +50,10 @@ class BranchView extends React.Component {
 	}
 
 	loadBranches() {
-		getBranches().then(branches => {
+		getBranches().then((branches) => {
 			const branchList = branches
-				.filter(branch => branch !== 'master')
-				.map(option => ({ value: option, label: option }));
+				.filter((branch) => !['master', 'trunk'].includes(branch))
+				.map((option) => ({ value: option, label: option }));
 			this.setState({ branchList });
 		});
 	}
@@ -78,7 +78,7 @@ class BranchView extends React.Component {
 
 		const pushesResponse = await getPushes(branchName);
 		const { pushes } = pushesResponse.data;
-		const lastPush = pushes.find(p => p.sha === sha) || null;
+		const lastPush = pushes.find((p) => p.sha === sha) || null;
 
 		this.setState({
 			selectedBranchPushes: pushes,
@@ -91,7 +91,7 @@ class BranchView extends React.Component {
 		}
 	}
 
-	selectBranch = option => {
+	selectBranch = (option) => {
 		const selectedBranch = option.value || '';
 		this.props.history.push({ search: selectedBranch ? `?branch=${selectedBranch}` : '' });
 		this.setState({
@@ -159,7 +159,7 @@ class BranchView extends React.Component {
 			return null;
 		}
 
-		const previousPushes = selectedBranchPushes.filter(p => p.sha !== selectedBranchHead.sha);
+		const previousPushes = selectedBranchPushes.filter((p) => p.sha !== selectedBranchHead.sha);
 		if (previousPushes.length === 0) {
 			return null;
 		}
@@ -167,7 +167,7 @@ class BranchView extends React.Component {
 		return (
 			<div>
 				<h4>Previous pushes in this branch:</h4>
-				{previousPushes.map(push => (
+				{previousPushes.map((push) => (
 					<div className="push" key={push.sha}>
 						<b>Commit:</b> <PushLink sha={push.sha} prevSha={push.ancestor} />{' '}
 						<GitHubLink sha={push.sha} />
