@@ -6,11 +6,29 @@ const { deltaFromStats, deltaFromStatsAndGroups } = require('./delta');
 
 const K = knex(config);
 
+// treat `master` and `trunk` branches as equivalent and always match both
+const TRUNK_BRANCHES = ['master', 'trunk'];
+
+function branchWhere(branch) {
+	let neg = false;
+	if (branch[0] === '!') {
+		branch = branch.slice(1);
+		neg = true;
+	}
+
+	if (TRUNK_BRANCHES.includes(branch)) {
+		return [neg ? 'not in' : 'in', TRUNK_BRANCHES];
+	} else {
+		return [neg ? '!=' : '=', branch];
+	}
+}
+
 // find the SHA of last processed trunk push
 async function getLastTrunkPushSha() {
 	const lastPushArr = await K('pushes')
 		.select('sha')
-		.where({ branch: 'trunk', processed: true })
+		.where('branch', ...branchWhere('trunk'))
+		.andWhere('processed', true)
 		.orderBy('created_at', 'desc')
 		.limit(1);
 
@@ -54,7 +72,11 @@ exports.insertPush = async (push) => {
 };
 
 exports.getPushesForBranch = (branch) =>
-	K('pushes').select().where('branch', branch).orderBy('id', 'desc').limit(100);
+	K('pushes')
+		.select()
+		.where('branch', ...branchWhere(branch))
+		.orderBy('id', 'desc')
+		.limit(100);
 
 exports.getQueuedPushes = () => K('pushes').select().where('processed', false);
 
@@ -79,17 +101,19 @@ function periodToLastCount(period) {
 async function getPushShas(branch, lastCount) {
 	const trunkPushesQuery = K('pushes')
 		.select(['sha', 'created_at'])
-		.where({ processed: true, branch: 'trunk' })
+		.where('processed', true)
+		.andWhere('branch', ...branchWhere('trunk'))
 		.orderBy('created_at', 'desc')
 		.limit(lastCount);
 
-	if (branch === 'trunk') {
+	if (TRUNK_BRANCHES.includes(branch)) {
 		return trunkPushesQuery;
 	}
 
 	const [patchBranchPush] = await K('pushes')
 		.select(['sha', 'created_at', 'ancestor'])
-		.where({ branch, processed: true })
+		.where('branch', ...branchWhere(branch))
+		.andWhere('processed', true)
 		.orderBy('created_at', 'desc')
 		.limit(1);
 
@@ -309,9 +333,9 @@ exports.getPushDelta = function (first, second, options) {
 function applyBranchFilter(query, branch) {
 	if (branch && branch !== '*') {
 		if (branch[0] === '!') {
-			query.whereNot('branch', branch.slice(1));
+			query.where('branch', ...branchWhere(branch));
 		} else {
-			query.where('branch', branch);
+			query.where('branch', ...branchWhere(branch));
 		}
 	}
 
