@@ -212,7 +212,11 @@ async function githubWebhook(req, res) {
 	}
 
 	// push to main branch
-	if (type === 'push' && body.ref === 'refs/heads/master' && body.head_commit) {
+	if (
+		type === 'push' &&
+		(body.ref === 'refs/heads/master' || body.ref === 'refs/heads/trunk') &&
+		body.head_commit
+	) {
 		console.log('Received GitHub webhook:', id, type);
 		await queuePush(fromPush(body));
 	}
