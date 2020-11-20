@@ -132,7 +132,7 @@ function verifyWebhookSecret(req, res) {
 		return true;
 	}
 
-	console.log('bad secret in CI webhook notification');
+	console.log('bad secret in CI webhook notification:', req.query, req.body);
 	res.status(500).send('Unauthenticated');
 	return false;
 }
