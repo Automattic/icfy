@@ -225,6 +225,8 @@ function deltaFromStatsAndGroups(firstStats, firstGroups, secondStats, secondGro
 		const secondSizes = sizesOfGroup(secondGroup, secondStats);
 		const deltaSizes = deltaSizesOf(firstSizes, secondSizes);
 		const deltaPercents = deltaPercentsOf(firstSizes, deltaSizes);
+		const firstChunks = (firstGroup || {}).chunks || [];
+		const secondChunks = (secondGroup || {}).chunks || [];
 
 		if (isDeltaEligible(deltaSizes)) {
 			deltas.push({
@@ -233,6 +235,8 @@ function deltaFromStatsAndGroups(firstStats, firstGroups, secondStats, secondGro
 				secondSizes,
 				deltaSizes,
 				deltaPercents,
+				firstChunks,
+				secondChunks,
 			});
 		}
 	}
@@ -243,12 +247,16 @@ function deltaFromStatsAndGroups(firstStats, firstGroups, secondStats, secondGro
 			const firstSizes = null;
 			const secondSizes = sizesOfGroup(secondGroup, secondStats);
 			const deltaSizes = deltaSizesOf(firstSizes, secondSizes);
+			const firstChunks = [];
+			const secondChunks = secondGroup.chunks || [];
 
 			deltas.push({
 				name,
 				firstSizes,
 				secondSizes,
 				deltaSizes,
+				firstChunks,
+				secondChunks,
 			});
 		}
 	}
