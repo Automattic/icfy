@@ -3,6 +3,7 @@ const { log, getPRNumber } = require('./utils');
 const db = require('./db');
 const gh = require('./github');
 const printDeltaTable = require('./delta-table');
+const { sumSizesOf, ZERO_SIZE } = require('./delta');
 
 const REPO = 'Automattic/wp-calypso';
 const WATERMARK = 'c52822';
@@ -33,6 +34,49 @@ function groupByArea(deltas) {
 		}
 		return 'section';
 	});
+}
+
+function totalDeltasForArea(areaDelta, delta) {
+	if (!areaDelta) {
+		return {...ZERO_SIZE};
+	}
+
+	// Produce an array of arrays:
+	// [ [ chunks in use in first commit ] , [ chunks in use in second commit ] ]
+	// The items will be unique inside each array.
+	const chunksInUse = ['firstChunks', 'secondChunks']
+		.map(chunkType => areaDelta.reduce(
+			(acc, group) => {
+				for (const chunk of group[chunkType]) {
+					acc.add(chunk);
+				}
+				return acc;
+			},
+			new Set()
+		))
+		.map(set => [...set]);
+
+	// Produce an array of size objects, representing the sum of all the chunks for each commit:
+	// [ { stat_size: 0, parsed_size: 0, gzip_size: 0 }, { stat_size: 0, parsed_size: 0, gzip_size: 0 } ]
+	// The first object is for the first commit, and the second object for the second commit.
+	const chunkSizes = ['firstSizes', 'secondSizes']
+		.map((property, index) => chunksInUse[index].reduce(
+			(acc, chunkName) => {
+				const chunk = delta.chunks.find(chunk => chunk.name === chunkName) || {};
+				acc = sumSizesOf(acc, chunk[property]);
+				return acc;
+			},
+			{...ZERO_SIZE}
+		));
+
+	// Produce a single object with the delta between first and second commit:
+	// { stat_size: 0, parsed_size: 0, gzip_size: 0 }
+	let deltaSizes = {};
+	for (const sizeType in chunkSizes[0]) {
+		deltaSizes[sizeType] = chunkSizes[1][sizeType] - chunkSizes[0][sizeType];
+	}
+
+	return deltaSizes;
 }
 
 const AREAS = [
@@ -90,8 +134,11 @@ function watermarkString(watermark) {
 	return `icfy-watermark: ${watermark}`;
 }
 
-async function statsMessage(push) {
-	const delta = await db.getPushDelta(push.ancestor, push.sha, { extractManifestGroup: true });
+async function getDelta(push) {
+	return await db.getPushDelta(push.ancestor, push.sha, { extractManifestGroup: true });
+}
+
+function statsMessage(delta) {
 	const byArea = groupByArea(delta.groups);
 
 	const message = [];
@@ -112,7 +159,7 @@ async function statsMessage(push) {
 				continue;
 			}
 
-			const bytesDelta = _.reduce(areaDelta, (sum, delta) => sum + delta.deltaSizes.gzip_size, 0);
+			const bytesDelta = totalDeltasForArea(areaDelta, delta).gzip_size || 0;
 			const changedBytes = Math.abs(bytesDelta);
 			const suffix = bytesDelta < 0 ? 'removed 📉' : 'added 📈';
 
@@ -187,7 +234,7 @@ module.exports = async function commentOnGithub(sha) {
 
 	const [firstComment, ...otherComments] = await getOurPRCommentIDs(REPO, prNumber);
 
-	const message = await statsMessage(push);
+	const message = statsMessage(await getDelta(push));
 
 	if (!firstComment) {
 		log('Posting first comment on PR', prNumber);

@@ -1,6 +1,7 @@
 const _ = require('lodash');
 
 const sizes = ['stat_size', 'parsed_size', 'gzip_size'];
+const ZERO_SIZE = sizes.reduce((acc, size) => ({...acc, [size]: 0}), {});
 
 function sizesOf(stat) {
 	return stat ? _.pick(stat, sizes) : null;
@@ -225,6 +226,8 @@ function deltaFromStatsAndGroups(firstStats, firstGroups, secondStats, secondGro
 		const secondSizes = sizesOfGroup(secondGroup, secondStats);
 		const deltaSizes = deltaSizesOf(firstSizes, secondSizes);
 		const deltaPercents = deltaPercentsOf(firstSizes, deltaSizes);
+		const firstChunks = (firstGroup || {}).chunks || [];
+		const secondChunks = (secondGroup || {}).chunks || [];
 
 		if (isDeltaEligible(deltaSizes)) {
 			deltas.push({
@@ -233,6 +236,8 @@ function deltaFromStatsAndGroups(firstStats, firstGroups, secondStats, secondGro
 				secondSizes,
 				deltaSizes,
 				deltaPercents,
+				firstChunks,
+				secondChunks,
 			});
 		}
 	}
@@ -243,12 +248,16 @@ function deltaFromStatsAndGroups(firstStats, firstGroups, secondStats, secondGro
 			const firstSizes = null;
 			const secondSizes = sizesOfGroup(secondGroup, secondStats);
 			const deltaSizes = deltaSizesOf(firstSizes, secondSizes);
+			const firstChunks = [];
+			const secondChunks = secondGroup.chunks || [];
 
 			deltas.push({
 				name,
 				firstSizes,
 				secondSizes,
 				deltaSizes,
+				firstChunks,
+				secondChunks,
 			});
 		}
 	}
@@ -258,3 +267,5 @@ function deltaFromStatsAndGroups(firstStats, firstGroups, secondStats, secondGro
 
 exports.deltaFromStats = deltaFromStats;
 exports.deltaFromStatsAndGroups = deltaFromStatsAndGroups;
+exports.sumSizesOf = sumSizesOf;
+exports.ZERO_SIZE = ZERO_SIZE;
