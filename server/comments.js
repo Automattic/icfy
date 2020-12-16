@@ -3,6 +3,7 @@ const { log, getPRNumber } = require('./utils');
 const db = require('./db');
 const gh = require('./github');
 const printDeltaTable = require('./delta-table');
+const { sumSizesOf, ZERO_SIZE } = require('./delta');
 
 const REPO = 'Automattic/wp-calypso';
 const WATERMARK = 'c52822';
@@ -37,7 +38,7 @@ function groupByArea(deltas) {
 
 function totalDeltasForArea(areaDelta, delta) {
 	if (!areaDelta) {
-		return {};
+		return {...ZERO_SIZE};
 	}
 
 	// Produce an array of arrays:
@@ -62,12 +63,10 @@ function totalDeltasForArea(areaDelta, delta) {
 		.map((property, index) => chunksInUse[index].reduce(
 			(acc, chunkName) => {
 				const chunk = delta.chunks.find(chunk => chunk.name === chunkName) || {};
-				for (const sizeType in chunk[property]) {
-					acc[sizeType] = chunk[property][sizeType] + (acc[sizeType] || 0);
-				}
+				acc = sumSizesOf(acc, chunk[property]);
 				return acc;
 			},
-			{}
+			{...ZERO_SIZE}
 		));
 
 	// Produce a single object with the delta between first and second commit:

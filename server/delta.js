@@ -1,6 +1,7 @@
 const _ = require('lodash');
 
 const sizes = ['stat_size', 'parsed_size', 'gzip_size'];
+const ZERO_SIZE = sizes.reduce((acc, size) => ({...acc, [size]: 0}), {});
 
 function sizesOf(stat) {
 	return stat ? _.pick(stat, sizes) : null;
@@ -266,3 +267,5 @@ function deltaFromStatsAndGroups(firstStats, firstGroups, secondStats, secondGro
 
 exports.deltaFromStats = deltaFromStats;
 exports.deltaFromStatsAndGroups = deltaFromStatsAndGroups;
+exports.sumSizesOf = sumSizesOf;
+exports.ZERO_SIZE = ZERO_SIZE;
