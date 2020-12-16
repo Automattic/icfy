@@ -46,7 +46,7 @@ function totalDeltasForArea(areaDelta, delta) {
 	const chunksInUse = ['firstChunks', 'secondChunks']
 		.map(chunkType => areaDelta.reduce(
 			(acc, group) => {
-				for (chunk of group[chunkType]) {
+				for (const chunk of group[chunkType]) {
 					acc.add(chunk);
 				}
 				return acc;
@@ -62,8 +62,8 @@ function totalDeltasForArea(areaDelta, delta) {
 		.map((property, index) => chunksInUse[index].reduce(
 			(acc, chunkName) => {
 				const chunk = delta.chunks.find(chunk => chunk.name === chunkName) || {};
-				for (size in chunk[property]) {
-					acc[size] = chunk[property][size] + (acc[size] || 0);
+				for (const sizeType in chunk[property]) {
+					acc[sizeType] = chunk[property][sizeType] + (acc[sizeType] || 0);
 				}
 				return acc;
 			},
@@ -73,7 +73,7 @@ function totalDeltasForArea(areaDelta, delta) {
 	// Produce a single object with the delta between first and second commit:
 	// { stat_size: 0, parsed_size: 0, gzip_size: 0 }
 	let deltaSizes = {};
-	for (sizeType in chunkSizes[0]) {
+	for (const sizeType in chunkSizes[0]) {
 		deltaSizes[sizeType] = chunkSizes[1][sizeType] - chunkSizes[0][sizeType];
 	}
 
