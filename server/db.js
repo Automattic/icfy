@@ -2,7 +2,7 @@ const _ = require('lodash');
 const knex = require('knex');
 const config = require('./knexfile');
 const { timed } = require('./utils');
-const { deltaFromStats, deltaFromStatsAndGroups } = require('./delta');
+const { deltaFromStats, deltaFromStatsAndGroups, allChunksFromStats } = require('./delta');
 
 const K = knex(config);
 
@@ -326,8 +326,15 @@ exports.getPushDelta = function (first, second, options) {
 	]).then(([[firstStats, secondStats], [firstGroups, secondGroups]]) =>
 		deltaFromStatsAndGroups(firstStats, firstGroups, secondStats, secondGroups, options)
 	);
+	const allChunks = statsRequest.then(([firstStats, secondStats]) =>
+		allChunksFromStats(firstStats, secondStats)
+);
 
-	return Promise.all([chunksDelta, groupsDelta]).then(([chunks, groups]) => ({ chunks, groups }));
+	return Promise.all([
+		chunksDelta,
+		groupsDelta,
+		allChunks
+	]).then(([chunks, groups, allChunks]) => ({ chunks, groups, allChunks }));
 };
 
 function applyBranchFilter(query, branch) {

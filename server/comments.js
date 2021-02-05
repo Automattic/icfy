@@ -62,7 +62,7 @@ function totalDeltasForArea(areaDelta, delta) {
 	const chunkSizes = ['firstSizes', 'secondSizes']
 		.map((property, index) => chunksInUse[index].reduce(
 			(acc, chunkName) => {
-				const chunk = delta.chunks.find(chunk => chunk.name === chunkName) || {};
+				const chunk = delta.allChunks.find(chunk => chunk.name === chunkName) || {};
 				acc = sumSizesOf(acc, chunk[property]);
 				return acc;
 			},

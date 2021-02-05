@@ -133,6 +133,47 @@ function byGroupName(group) {
 	return g => name === canonicalName(g.group);
 }
 
+function allChunksFromStats(firstStats, secondStats) {
+	const chunks = [];
+	for (const firstStat of firstStats) {
+		const secondStat = secondStats.find(byChunkName(firstStat));
+		const name = (secondStat || firstStat).chunk; // prefer the second chunk's name
+		const firstHash = firstStat.hash;
+		const secondHash = secondStat ? secondStat.hash : null;
+
+		const firstSizes = sizesOf(firstStat);
+		const secondSizes = sizesOf(secondStat);
+
+		chunks.push({
+			name,
+			firstHash,
+			firstSizes,
+			secondHash,
+			secondSizes,
+		});
+	}
+
+	for (const secondStat of secondStats) {
+		if (!firstStats.find(byChunkName(secondStat))) {
+			const name = secondStat.chunk;
+			const firstHash = null;
+			const firstSizes = null;
+			const secondHash = secondStat.hash;
+			const secondSizes = sizesOf(secondStat);
+
+			chunks.push({
+				name,
+				firstHash,
+				firstSizes,
+				secondHash,
+				secondSizes,
+			});
+		}
+	}
+
+	return chunks;
+}
+
 function deltaFromStats(firstStats, secondStats) {
 	const deltas = [];
 
@@ -266,6 +307,7 @@ function deltaFromStatsAndGroups(firstStats, firstGroups, secondStats, secondGro
 }
 
 exports.deltaFromStats = deltaFromStats;
+exports.allChunksFromStats = allChunksFromStats;
 exports.deltaFromStatsAndGroups = deltaFromStatsAndGroups;
 exports.sumSizesOf = sumSizesOf;
 exports.ZERO_SIZE = ZERO_SIZE;
