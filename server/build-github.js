@@ -5,6 +5,7 @@ const rimraf = require('rimraf');
 const _ = require('lodash');
 const { log, timed } = require('./utils');
 const gh = require('./github');
+const parseStats = require('./parse-stats');
 
 const REPO = 'Automattic/wp-calypso';
 
@@ -51,8 +52,8 @@ function unzip(workDir, filename) {
 	});
 }
 
-async function parseJson(workDir, filename) {
-	return JSON.parse(await fs.promises.readFile(path.join(workDir, filename)));
+async function parseJson(filename) {
+	return JSON.parse(await fs.promises.readFile(filename));
 }
 
 function cleanup(workDir) {
@@ -96,10 +97,10 @@ async function processBuild(buildNum) {
 		await timed(unzip(workDir, 'archive.zip'), 'unzip');
 
 		log('Parsing stats.json');
-		result.stats = await timed(parseJson(workDir, 'stats.json'), 'parseStats');
+		result.stats = await timed(parseStats(path.join(workDir, 'stats.json')), 'parseStats');
 
 		log('Parsing chart.json');
-		result.chart = await timed(parseJson(workDir, 'chart.json'), 'parseChart');
+		result.chart = await timed(parseJson(path.join(workDir, 'chart.json')), 'parseChart');
 
 		log(`Finished reading and extracting archive for artifact ID ${icfyArtifact.id}`);
 	} catch (error) {
