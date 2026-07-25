@@ -23,7 +23,7 @@
   "overrides": {
     "form-data": "^2.5.4",
     "loader-utils": "^1.4.2",
-    "shell-quote": "^1.8.4"
+    "shell-quote": "^1.10.0"
   },
   "browserslist": {
     "production": [
